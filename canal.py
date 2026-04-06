@@ -36,7 +36,6 @@ def get_html(url, headers=None, timeout=40, intentos=3, pausa=2):
 def convertir_fecha_canal(texto):
     texto = limpiar_texto(texto).lower()
 
-    # helper
     def mk(dia, mes_txt, anio):
         return construir_fecha(dia, mes_txt, anio)
 
@@ -106,7 +105,12 @@ def sacar_canal():
     eventos = []
     vistos = set()
 
-    r = get_html(url, headers=HEADERS, timeout=40, intentos=3, pausa=2)
+    try:
+        r = get_html(url, headers=HEADERS, timeout=40, intentos=3, pausa=2)
+    except requests.exceptions.RequestException as e:
+        print(f"[canal] fuente omitida: {e}")
+        return []
+
     soup = BeautifulSoup(r.text, "html.parser")
 
     lineas = [
@@ -196,7 +200,6 @@ def sacar_canal():
             url
         )
 
-    # orden estable por fecha y luego título
     def _parse_fecha(fila):
         try:
             return date(

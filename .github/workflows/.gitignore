@@ -12,3 +12,7 @@ env/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Archivos generados (scraper)
+eventos.csv
+eventos.json

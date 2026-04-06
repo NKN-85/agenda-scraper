@@ -308,20 +308,6 @@
     "fuente": "https://www.mataderomadrid.org/programacion"
   },
   {
-    "titulo": "Bérénice",
-    "fecha": "2026-04-10",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/programacion-temporada-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
-    "titulo": "Once Upon A Time",
-    "fecha": "2026-04-10",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/abonos-teatros-canal-tc25-26/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "Mercedes Cañas",
     "fecha": "2026-04-10",
     "lugar": "Sala La Riviera",
@@ -469,13 +455,6 @@
     "fuente": "https://www.mataderomadrid.org/programacion"
   },
   {
-    "titulo": "BoBo",
-    "fecha": "2026-04-11",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/adolfo-simon-ciclo-dramaturgia-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "Rufus T. Firefly",
     "fecha": "2026-04-11",
     "lugar": "Sala La Riviera",
@@ -504,17 +483,17 @@
     "fuente": "https://berlincafe.es/programas/"
   },
   {
-    "titulo": "ISMA ROMERO TIRA Y AFLOJA",
-    "fecha": "2026-04-11",
-    "lugar": "La Sala del Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=isma-romero-tira-y-afloja",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "BAD GYAL TOUR 2026",
     "fecha": "2026-04-11",
     "lugar": "Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=bad-gyal-tour-2026",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "ISMA ROMERO TIRA Y AFLOJA",
+    "fecha": "2026-04-11",
+    "lugar": "La Sala del Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=isma-romero-tira-y-afloja",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -686,17 +665,17 @@
     "fuente": "https://www.mataderomadrid.org/programacion"
   },
   {
-    "titulo": "BAD GYAL TOUR 2026",
-    "fecha": "2026-04-14",
-    "lugar": "Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=bad-gyal-tour-2026",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "LOS GANDULES LA SALA COMEDIA BY DOMINO´S",
     "fecha": "2026-04-14",
     "lugar": "La Sala del Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=los-gandules-la-sala-comedia-by-dominos",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "BAD GYAL TOUR 2026",
+    "fecha": "2026-04-14",
+    "lugar": "Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=bad-gyal-tour-2026",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -917,13 +896,6 @@
     "fuente": "https://www.mataderomadrid.org/programacion"
   },
   {
-    "titulo": "Le murmure des songes",
-    "fecha": "2026-04-17",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/once-upon-a-time-goblin-party-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "Arco",
     "fecha": "2026-04-17",
     "lugar": "Sala La Riviera",
@@ -945,17 +917,17 @@
     "fuente": "https://berlincafe.es/programas/"
   },
   {
-    "titulo": "SOBREDOSIS",
-    "fecha": "2026-04-17",
-    "lugar": "La Sala del Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=sobredosis",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "NEYO",
     "fecha": "2026-04-17",
     "lugar": "Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=neyo",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "SOBREDOSIS",
+    "fecha": "2026-04-17",
+    "lugar": "La Sala del Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=sobredosis",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -1083,13 +1055,6 @@
     "lugar": "Matadero Madrid",
     "url_evento": "https://www.mataderomadrid.org/programacion/talleres-festival-biophest-2026",
     "fuente": "https://www.mataderomadrid.org/programacion"
-  },
-  {
-    "titulo": "STUCK",
-    "fecha": "2026-04-18",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/la-vida-extraordinaria-mariano-tenconi-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
   },
   {
     "titulo": "Koma",
@@ -1251,13 +1216,6 @@
     "lugar": "Matadero Madrid",
     "url_evento": "https://www.mataderomadrid.org/programacion/circo-notes-circus",
     "fuente": "https://www.mataderomadrid.org/programacion"
-  },
-  {
-    "titulo": "Loira",
-    "fecha": "2026-04-19",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/berenice-isabelle-huppert-romeo-castellucci-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
   },
   {
     "titulo": "Hens",
@@ -1491,13 +1449,6 @@
     "fuente": "https://salaelsol.com/agenda/"
   },
   {
-    "titulo": "MAMI",
-    "fecha": "2026-04-24",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/stuck-mounia-nassangar-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "Linaje",
     "fecha": "2026-04-24",
     "lugar": "Sala La Riviera",
@@ -1568,13 +1519,6 @@
     "fuente": "https://gruposmedia.com/teatro-figaro/"
   },
   {
-    "titulo": "ACCIÓN Xm2 (acción por metro cuadrado)",
-    "fecha": "2026-04-25",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/compagnie-accrorap-le-murmure-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "Iseo & Dodosound",
     "fecha": "2026-04-25",
     "lugar": "Sala La Riviera",
@@ -1589,17 +1533,17 @@
     "fuente": "https://berlincafe.es/programas/"
   },
   {
-    "titulo": "HOFE",
-    "fecha": "2026-04-25",
-    "lugar": "La Sala del Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=hofe",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "ETS BIHOTZEN KONKISTA",
     "fecha": "2026-04-25",
     "lugar": "Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=ets-bihotzen-konkista",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "HOFE",
+    "fecha": "2026-04-25",
+    "lugar": "La Sala del Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=hofe",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -1652,13 +1596,6 @@
     "fuente": "https://gruposmedia.com/capitol-gran-via/"
   },
   {
-    "titulo": "Comunidad de Madrid",
-    "fecha": "2026-04-26",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/bobo-periferia-teatro-canal-teatralia-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "Saxon",
     "fecha": "2026-04-26",
     "lugar": "Sala La Riviera",
@@ -1680,17 +1617,17 @@
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
-    "titulo": "CARDELLINO EUROPE TOUR",
-    "fecha": "2026-04-26",
-    "lugar": "La Sala del Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=cardellino-europe-tour",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "RÜFÜS DU SOL EUROPE 26",
     "fecha": "2026-04-26",
     "lugar": "Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=rufus-du-sol-europe-26",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "CARDELLINO EUROPE TOUR",
+    "fecha": "2026-04-26",
+    "lugar": "La Sala del Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=cardellino-europe-tour",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -1792,20 +1729,6 @@
     "fuente": "https://www.salabut.es/agenda-conciertos/"
   },
   {
-    "titulo": "Feos",
-    "fecha": "2026-04-29",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/loira-abraham-cupeiro-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
-    "titulo": "Las hijas de Bernarda",
-    "fecha": "2026-04-29",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/iii-festival-de-la-guitarra/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "4 CACHIVACHES CON DANI FEZ LA SALA COMEDIA BY DOMINO´S",
     "fecha": "2026-04-29",
     "lugar": "La Sala del Movistar Arena",
@@ -1860,13 +1783,6 @@
     "lugar": "Teatro Gran Vía",
     "url_evento": "https://gruposmedia.com/cartelera/el-mago-invisible-nada-es-lo-que-parece/",
     "fuente": "https://gruposmedia.com/teatro-gran-via/"
-  },
-  {
-    "titulo": "Medea",
-    "fecha": "2026-04-30",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/mami-mario-banushi-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
   },
   {
     "titulo": "Mala Gestión",
@@ -2399,13 +2315,6 @@
     "lugar": "Teatro Real Carlos III de Aranjuez",
     "url_evento": "https://teatroaranjuez.es/cartelera/nubipop/",
     "fuente": "https://teatroaranjuez.es/cartelera/"
-  },
-  {
-    "titulo": "Compositoras en escena",
-    "fecha": "2026-05-10",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/accion-xm-la-juan-gallery-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
   },
   {
     "titulo": "Abel Pintos",
@@ -2961,6 +2870,13 @@
     "fuente": "https://salaelsol.com/agenda/"
   },
   {
+    "titulo": "Free Britney",
+    "fecha": "2026-05-22",
+    "lugar": "Teatro Real Carlos III de Aranjuez",
+    "url_evento": "https://teatroaranjuez.es/cartelera/free-britney/",
+    "fuente": "https://teatroaranjuez.es/cartelera/"
+  },
+  {
     "titulo": "La Pegatina",
     "fecha": "2026-05-22",
     "lugar": "Sala La Riviera",
@@ -3043,20 +2959,6 @@
     "lugar": "Teatro Real Carlos III de Aranjuez",
     "url_evento": "https://teatroaranjuez.es/cartelera/perdido-en-los-80/",
     "fuente": "https://teatroaranjuez.es/cartelera/"
-  },
-  {
-    "titulo": "La Cordero y su ejército",
-    "fecha": "2026-05-23",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/feos-guillermo-calderon-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
-    "titulo": "Palabrería pesada",
-    "fecha": "2026-05-23",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/las-hijas-de-bernarda-taiat-dansa-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
   },
   {
     "titulo": "La Pegatina",
@@ -3283,20 +3185,6 @@
     "fuente": "https://salaelsol.com/agenda/"
   },
   {
-    "titulo": "La dama boba",
-    "fecha": "2026-05-28",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/medea-declan-donnellan-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
-    "titulo": "SACRESIZE",
-    "fecha": "2026-05-28",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/joven-camerata-de-la-orcam-2/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "Enol",
     "fecha": "2026-05-28",
     "lugar": "Sala La Riviera",
@@ -3304,17 +3192,17 @@
     "fuente": "https://salariviera.com/conciertossalariviera/"
   },
   {
-    "titulo": "LA OREJA DE VAN GOGH TANTAS COSAS QUE CONTAR TOUR 2026",
-    "fecha": "2026-05-28",
-    "lugar": "Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=la-oreja-de-van-gogh-tantas-cosas-que-contar-tour-2026",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "SONIA GÓMEZ",
     "fecha": "2026-05-28",
     "lugar": "La Sala del Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=sonia-g-mez",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "LA OREJA DE VAN GOGH TANTAS COSAS QUE CONTAR TOUR 2026",
+    "fecha": "2026-05-28",
+    "lugar": "Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=la-oreja-de-van-gogh-tantas-cosas-que-contar-tour-2026",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -3435,13 +3323,6 @@
     "lugar": "Capitol Gran Vía",
     "url_evento": "https://gruposmedia.com/cartelera/palabras-mayores-alex-odogherty/",
     "fuente": "https://gruposmedia.com/capitol-gran-via/"
-  },
-  {
-    "titulo": "Madriguera",
-    "fecha": "2026-05-30",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/sol-pico-cia-de-danza/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
   },
   {
     "titulo": "Dewolff + Israel Nash",
@@ -4039,13 +3920,6 @@
     "fuente": "https://www.mataderomadrid.org/programacion"
   },
   {
-    "titulo": "Los Estunmen",
-    "fecha": "2026-06-14",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/palabreria-pesada-amaia-bono-damian-montesdeoca-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "Humbe",
     "fecha": "2026-06-14",
     "lugar": "Sala La Riviera",
@@ -4165,25 +4039,11 @@
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
   },
   {
-    "titulo": "Quien sea llega tarde, de EUSEBIO CALONGE",
-    "fecha": "2026-06-21",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/la-dama-boba-josep-maria-mestres-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
     "titulo": "OCNE. Sinfónico 23",
     "fecha": "2026-06-21",
     "lugar": "Sala Sinfónica",
     "url_evento": "https://auditorionacional.inaem.gob.es/es/programacion/ocne-sinfonico-23-3",
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
-  },
-  {
-    "titulo": "Los diarios de Manhattan",
-    "fecha": "2026-06-23",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/los-estunmen-nao-albet-marcel-borras-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
   },
   {
     "titulo": "ORCAM. Sinfónico 9. Beethoven en la Treintena",
@@ -4296,20 +4156,6 @@
     "lugar": "Teatro Fígaro",
     "url_evento": "https://gruposmedia.com/cartelera/victoria/",
     "fuente": "https://gruposmedia.com/teatro-figaro/"
-  },
-  {
-    "titulo": "Cucaracha, de SAM HOLCROFT",
-    "fecha": "2026-06-28",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/la-madriguera-farres-brothers-canal-teatralia-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
-  },
-  {
-    "titulo": "Los lunes al sol",
-    "fecha": "2026-06-28",
-    "lugar": "Teatros del Canal",
-    "url_evento": "https://www.teatroscanal.com/espectaculo/alberto-velasco-sacresize-tc2526/",
-    "fuente": "https://www.teatroscanal.com/cartelera-madrid/"
   },
   {
     "titulo": "OCNE. Sinfónico 24",

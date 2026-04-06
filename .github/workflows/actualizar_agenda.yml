@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Descargar repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Instalar Python
         uses: actions/setup-python@v5
@@ -27,11 +29,29 @@ jobs:
       - name: Ejecutar scraper
         run: python main.py
 
-      - name: Guardar cambios
+      - name: Configurar git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Comprobar cambios
+        id: cambios
+        run: |
           git add eventos.csv eventos.json
-          git diff --staged --quiet || git commit -m "Actualiza agenda automática"
-          git pull --rebase origin main
-          git push
+          if git diff --cached --quiet; then
+            echo "hay_cambios=false" >> $GITHUB_OUTPUT
+          else
+            echo "hay_cambios=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit
+        if: steps.cambios.outputs.hay_cambios == 'true'
+        run: git commit -m "Actualiza agenda automática"
+
+      - name: Rebase con remoto
+        if: steps.cambios.outputs.hay_cambios == 'true'
+        run: git pull --rebase origin main
+
+      - name: Push
+        if: steps.cambios.outputs.hay_cambios == 'true'
+        run: git push origin main

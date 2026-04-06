@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
-from utils import HEADERS, agregar_evento
+from utils import HEADERS, agregar_evento, get_url
 from helpers.texto import normalizar_texto
 
 
@@ -48,8 +48,8 @@ def sacar_berlin():
     eventos = []
     vistos = set()
 
-    respuesta = requests.get(url, headers=HEADERS, verify=False, timeout=20)
-    respuesta.raise_for_status()
+    # 🔥 CAMBIO AQUÍ
+    respuesta = get_url(url, timeout=20)
 
     soup = BeautifulSoup(respuesta.text, "html.parser")
 
@@ -94,8 +94,7 @@ def sacar_berlin():
         dia = None
         mes_txt = None
 
-        # Miramos hacia arriba: en esta web el bloque suele tener
-        # día de semana / día / mes / título / hora
+        # Miramos hacia arriba
         inicio = max(0, i - 6)
         ventana = lineas[inicio:i]
 
@@ -120,9 +119,7 @@ def sacar_berlin():
         if not mes_num:
             continue
 
-        # Inferencia mínima de año:
-        # la página va en orden cronológico; si tras meses altos vuelve a un mes bajo,
-        # asumimos salto de año.
+        # Inferencia de año
         if mes_num < mes_anterior - 6:
             anio_actual += 1
         mes_anterior = mes_num
@@ -136,7 +133,7 @@ def sacar_berlin():
 
         candidatos.append((titulo, fecha_evento, url_evento))
 
-    # Dedupe por URL para no repetir título + Read More
+    # Dedupe por URL
     candidatos_unicos = []
     urls_vistas = set()
     for titulo, fecha_evento, url_evento in candidatos:

@@ -2,7 +2,7 @@ import requests
 import re
 from datetime import date
 
-from utils import HEADERS
+from utils import HEADERS, get_url
 from helpers.texto import normalizar_texto
 from helpers.avisos import avisar
 from helpers.fichas import abrir_ficha, extraer_titulo, extraer_lineas
@@ -26,26 +26,16 @@ def convertir_fecha_pequenogranvia(texto):
 
     texto = texto.strip().lower()
 
-    # Caso: "del 2 al 7 de junio de 2026"
     m = re.search(r"del\s+(\d{1,2})\s+al\s+\d{1,2}\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})", texto)
     if m:
-        dia = int(m.group(1))
-        mes = meses.get(m.group(2))
-        anio = int(m.group(3))
-        if mes:
-            return date(anio, mes, dia)
+        return date(int(m.group(3)), meses.get(m.group(2)), int(m.group(1)))
 
-    # Caso: "del 30 de junio al 2 de agosto de 2026"
     m = re.search(
         r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+\d{1,2}\s+de\s+[a-záéíóú]+\s+de\s+(\d{4})",
         texto
     )
     if m:
-        dia = int(m.group(1))
-        mes = meses.get(m.group(2))
-        anio = int(m.group(3))
-        if mes:
-            return date(anio, mes, dia)
+        return date(int(m.group(3)), meses.get(m.group(2)), int(m.group(1)))
 
     patrones = [
         r"(?:lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
@@ -57,54 +47,27 @@ def convertir_fecha_pequenogranvia(texto):
     for patron in patrones:
         m = re.search(patron, texto)
         if m:
-            dia = int(m.group(1))
-            mes = meses.get(m.group(2))
-            anio = int(m.group(3))
-            if mes:
-                return date(anio, mes, dia)
+            return date(int(m.group(3)), meses.get(m.group(2)), int(m.group(1)))
 
-    # Caso: "9, 23 y 30 de mayo de 2026"
-    m = re.search(
-        r"(\d{1,2})\s*,\s*\d{1,2}\s+y\s+\d{1,2}\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
-        texto
-    )
+    m = re.search(r"(\d{1,2})\s*,\s*\d{1,2}\s+y\s+\d{1,2}\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})", texto)
     if m:
-        dia = int(m.group(1))
-        mes = meses.get(m.group(2))
-        anio = int(m.group(3))
-        if mes:
-            return date(anio, mes, dia)
+        return date(int(m.group(3)), meses.get(m.group(2)), int(m.group(1)))
 
-    # Caso: "10 de abril, 8 de mayo, 12 de junio, 14 y 18 de julio de 2026"
     m1 = re.search(r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s*,", texto)
     m2 = re.search(r"de\s+(\d{4})", texto)
     if m1 and m2:
-        dia = int(m1.group(1))
-        mes = meses.get(m1.group(2))
-        anio = int(m2.group(1))
-        if mes:
-            return date(anio, mes, dia)
+        return date(int(m2.group(1)), meses.get(m1.group(2)), int(m1.group(1)))
 
-    # Caso: "11 de abril, 23 de mayo y 13 de junio 2026"
     m = re.search(
         r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s*,\s*\d{1,2}\s+de\s+[a-záéíóú]+\s+y\s+\d{1,2}\s+de\s+[a-záéíóú]+\s+(\d{4})",
         texto
     )
     if m:
-        dia = int(m.group(1))
-        mes = meses.get(m.group(2))
-        anio = int(m.group(3))
-        if mes:
-            return date(anio, mes, dia)
+        return date(int(m.group(3)), meses.get(m.group(2)), int(m.group(1)))
 
-    # Caso: "15 y 16 de mayo de 2026"
     m = re.search(r"(\d{1,2})\s+y\s+\d{1,2}\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})", texto)
     if m:
-        dia = int(m.group(1))
-        mes = meses.get(m.group(2))
-        anio = int(m.group(3))
-        if mes:
-            return date(anio, mes, dia)
+        return date(int(m.group(3)), meses.get(m.group(2)), int(m.group(1)))
 
     return None
 
@@ -133,8 +96,8 @@ def sacar_pequenogranvia():
 
     session = requests.Session()
 
-    respuesta = session.get(url, headers=HEADERS, verify=False, timeout=10)
-    respuesta.raise_for_status()
+    # 🔥 CAMBIO AQUÍ
+    respuesta = get_url(url, session=session, timeout=10)
 
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(respuesta.text, "html.parser")
@@ -178,7 +141,7 @@ def sacar_pequenogranvia():
         linea_norm = normalizar_texto(linea)
 
         if linea_norm in titulos_validos:
-            titulo, url_evento = titulos_validos[linea_norm]
+            titulo, url_evento, = titulos_validos[linea_norm]
             candidatos.append((titulo, url_evento, i))
 
     candidatos_unicos = []
@@ -192,14 +155,12 @@ def sacar_pequenogranvia():
         fecha_evento = None
         titulo_final = titulo
 
-        # primero: intentamos sacar fecha en portada
         for j in range(idx + 1, min(idx + 15, len(lineas))):
             candidato = lineas[j]
             fecha_evento = convertir_fecha_pequenogranvia(candidato)
             if fecha_evento:
                 break
 
-        # segundo: si no sale, vamos a la ficha
         if not fecha_evento:
             titulo_real, fecha_evento, _ = sacar_fecha_desde_pagina_evento(session, url_evento)
             if titulo_real:
@@ -210,11 +171,9 @@ def sacar_pequenogranvia():
 
             if clave not in vistos:
                 vistos.add(clave)
-                fecha_formateada = fecha_evento.strftime("%d/%m/%Y")
-
                 eventos.append([
                     titulo_final,
-                    fecha_formateada,
+                    fecha_evento.strftime("%d/%m/%Y"),
                     "Pequeño Teatro Gran Vía",
                     url_evento,
                     url

@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import date
 
-from utils import HEADERS, convertir_fecha_vistalegre
+from utils import HEADERS, convertir_fecha_vistalegre, get_url
 
 
 def sacar_vistalegre():
@@ -10,8 +10,9 @@ def sacar_vistalegre():
     eventos = []
     vistos = set()
 
-    respuesta = requests.get(url, headers=HEADERS, verify=False, timeout=15)
-    respuesta.raise_for_status()
+    # 🔥 CAMBIO AQUÍ
+    respuesta = get_url(url, timeout=15)
+
     soup = BeautifulSoup(respuesta.text, "html.parser")
 
     bloques = soup.find_all("div", class_="tribe-events-calendar-list__event-details")
@@ -40,11 +41,9 @@ def sacar_vistalegre():
             if clave not in vistos:
                 vistos.add(clave)
 
-                fecha_formateada = fecha_evento.strftime("%d/%m/%Y")
-
                 eventos.append([
                     titulo,
-                    fecha_formateada,
+                    fecha_evento.strftime("%d/%m/%Y"),
                     lugar,
                     url_evento,
                     url

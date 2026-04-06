@@ -8,6 +8,7 @@ from utils import (
     limpiar_texto,
     es_futura_o_hoy,
     agregar_evento,
+    get_url
 )
 
 
@@ -18,8 +19,9 @@ def sacar_eslava():
     eventos = []
     vistos = set()
 
-    respuesta = requests.get(url, headers=HEADERS, verify=False, timeout=15)
-    respuesta.raise_for_status()
+    # 🔥 CAMBIO AQUÍ
+    respuesta = get_url(url, timeout=15)
+
     soup = BeautifulSoup(respuesta.text, "html.parser")
 
     urls_por_titulo = {}

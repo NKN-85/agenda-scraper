@@ -1,9 +1,47 @@
 from datetime import date, datetime
 import re
+import requests
+import time
+import random
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
+
+
+# -------------------------
+# HTTP ROBUSTO
+# -------------------------
+
+def get_url(url, headers=None, timeout=15, intentos=3, session=None, pausa_min=0.8, pausa_max=2.0):
+    headers = headers or HEADERS
+    ultimo_error = None
+
+    for intento in range(intentos):
+        try:
+            # pausa aleatoria antes de cada petición
+            time.sleep(random.uniform(pausa_min, pausa_max))
+
+            cliente = session or requests
+            response = cliente.get(
+                url,
+                headers=headers,
+                timeout=timeout,
+                verify=False
+            )
+
+            response.raise_for_status()
+            return response
+
+        except requests.exceptions.RequestException as e:
+            ultimo_error = e
+            print(f"[HTTP] intento {intento + 1} fallido: {e}")
+
+            if intento < intentos - 1:
+                # espera extra antes del reintento
+                time.sleep(random.uniform(1.5, 3.0))
+
+    raise ultimo_error
 
 
 # -------------------------
@@ -63,6 +101,7 @@ def agregar_evento(eventos, vistos, titulo, fecha_evento, lugar, url_evento, fue
     ])
 
     return True
+
 
 # -------------------------
 # CONVERSIÓN DE MESES

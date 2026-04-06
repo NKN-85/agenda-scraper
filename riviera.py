@@ -3,7 +3,7 @@ import re
 from datetime import date
 from bs4 import BeautifulSoup
 
-from utils import HEADERS
+from utils import HEADERS, get_url
 
 
 def limpiar_texto(texto):
@@ -53,8 +53,8 @@ def sacar_riviera():
     eventos = []
     vistos = set()
 
-    r = requests.get(url, headers=HEADERS, verify=False, timeout=20)
-    r.raise_for_status()
+    # 🔥 CAMBIO AQUÍ
+    r = get_url(url, timeout=20)
 
     soup = BeautifulSoup(r.text, "html.parser")
 
@@ -83,7 +83,6 @@ def sacar_riviera():
             i += 1
             continue
 
-        # buscamos enlace por texto exacto del título
         enlace = soup.find("a", string=lambda s: s and limpiar_texto(s) == titulo)
         url_evento = enlace.get("href", "").strip() if enlace else ""
 

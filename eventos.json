@@ -1,40 +1,5 @@
 [
   {
-    "titulo": "Escuela de espectadores Sénior",
-    "fecha": "2025-09-01",
-    "lugar": "Matadero Madrid",
-    "url_evento": "https://www.mataderomadrid.org/programacion/escuela-de-espectadores-senior-0",
-    "fuente": "https://www.mataderomadrid.org/programacion"
-  },
-  {
-    "titulo": "PROGRAMAS PARA COLEGIOS ESO, BACHILLERATO Y FP",
-    "fecha": "2025-09-01",
-    "lugar": "Matadero Madrid",
-    "url_evento": "https://www.mataderomadrid.org/programacion/programas-para-colegios-eso-bachillerato-y-fp",
-    "fuente": "https://www.mataderomadrid.org/programacion"
-  },
-  {
-    "titulo": "Detectives de la lectura",
-    "fecha": "2025-09-01",
-    "lugar": "Matadero Madrid",
-    "url_evento": "https://www.mataderomadrid.org/programacion/detectives-de-la-lectura",
-    "fuente": "https://www.mataderomadrid.org/programacion"
-  },
-  {
-    "titulo": "DecirSioNo",
-    "fecha": "2025-09-01",
-    "lugar": "Matadero Madrid",
-    "url_evento": "https://www.mataderomadrid.org/programacion/decirsiono",
-    "fuente": "https://www.mataderomadrid.org/programacion"
-  },
-  {
-    "titulo": "Spasticus Artisticus",
-    "fecha": "2026-01-01",
-    "lugar": "Matadero Madrid",
-    "url_evento": "https://www.mataderomadrid.org/programacion/spasticus-artisticus-0",
-    "fuente": "https://www.mataderomadrid.org/programacion"
-  },
-  {
     "titulo": "La Tullida Gallery, un Proyecto de Costa Badía, residente de arte y educación",
     "fecha": "2026-01-21",
     "lugar": "Matadero Madrid",
@@ -278,13 +243,6 @@
     "lugar": "Teatro Real Carlos III de Aranjuez",
     "url_evento": "https://teatroaranjuez.es/cartelera/show-patetico-abian-diaz/",
     "fuente": "https://teatroaranjuez.es/cartelera/"
-  },
-  {
-    "titulo": "Encuentro con Íñigo Rubio",
-    "fecha": "2026-04-10",
-    "lugar": "Matadero Madrid",
-    "url_evento": "https://www.mataderomadrid.org/programacion/encuentro-con-inigo-rubio",
-    "fuente": "https://www.mataderomadrid.org/programacion"
   },
   {
     "titulo": "Duende y misterio del flamenco",
@@ -1190,17 +1148,17 @@
     "fuente": "https://teatroaranjuez.es/cartelera/"
   },
   {
-    "titulo": "Monster-zine Bestiario Imposible, es así como lo ves ahora",
-    "fecha": "2026-04-19",
-    "lugar": "Matadero Madrid",
-    "url_evento": "https://www.mataderomadrid.org/programacion/monster-zine-bestiario-imposible-es-asi-como-lo-ves-ahora",
-    "fuente": "https://www.mataderomadrid.org/programacion"
-  },
-  {
     "titulo": "Sesión musical. 'De la semilla al ritmo', con John Gómez",
     "fecha": "2026-04-19",
     "lugar": "Matadero Madrid",
     "url_evento": "https://www.mataderomadrid.org/programacion/sesion-musical-de-la-semilla-al-ritmo-con-john-gomez",
+    "fuente": "https://www.mataderomadrid.org/programacion"
+  },
+  {
+    "titulo": "Monster-zine Bestiario Imposible, es así como lo ves ahora",
+    "fecha": "2026-04-19",
+    "lugar": "Matadero Madrid",
+    "url_evento": "https://www.mataderomadrid.org/programacion/monster-zine-bestiario-imposible-es-asi-como-lo-ves-ahora",
     "fuente": "https://www.mataderomadrid.org/programacion"
   },
   {
@@ -1589,17 +1547,17 @@
     "fuente": "https://berlincafe.es/programas/"
   },
   {
-    "titulo": "ETS BIHOTZEN KONKISTA",
-    "fecha": "2026-04-25",
-    "lugar": "Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=ets-bihotzen-konkista",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "HOFE",
     "fecha": "2026-04-25",
     "lugar": "La Sala del Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=hofe",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "ETS BIHOTZEN KONKISTA",
+    "fecha": "2026-04-25",
+    "lugar": "Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=ets-bihotzen-konkista",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -1771,6 +1729,13 @@
     "fuente": "https://salariviera.com/conciertossalariviera/"
   },
   {
+    "titulo": "Los Ragtones en concierto",
+    "fecha": "2026-04-28",
+    "lugar": "Café Berlín",
+    "url_evento": "https://berlincafe.es/programa/los-ragtones-en-concierto/",
+    "fuente": "https://berlincafe.es/programas/"
+  },
+  {
     "titulo": "Ibermúsica. BBC National Orchestra of Wales",
     "fecha": "2026-04-28",
     "lugar": "Sala Sinfónica",
@@ -1832,13 +1797,6 @@
     "lugar": "Sala But",
     "url_evento": "https://ochoymedioclub.com/conciertos/toldos-verdes/",
     "fuente": "https://www.salabut.es/agenda-conciertos/"
-  },
-  {
-    "titulo": "Cave Sessions: Pulpix b2b Trenzark + b2Tn + Maven",
-    "fecha": "2026-04-30",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/cave-sessions-pulpix-b2b-trenzark-b2tn-maven/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "THE HANGMEN + DIESEL DOGS [40º Aniversario]",
@@ -1904,13 +1862,6 @@
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
   },
   {
-    "titulo": "Neon StarClub: Nine B + Carl0ta + Salomelody + Olivia Babe",
-    "fecha": "2026-05-01",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/neon-starclub-nine-b-carl0ta-salomelody-olivia-babe/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "Noche de chicas",
     "fecha": "2026-05-01",
     "lugar": "Teatro Real Carlos III de Aranjuez",
@@ -1932,13 +1883,6 @@
     "fuente": "https://www.salabut.es/agenda-conciertos/"
   },
   {
-    "titulo": "La Cangri: Kilo Gabbana + Bea Pelea Dj set +  Mthbts",
-    "fecha": "2026-05-02",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/la-cangri-3/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "ESPLENDOR GEOMÉTRICO + AZOTE MENTAL",
     "fecha": "2026-05-02",
     "lugar": "Sala El Sol",
@@ -1958,13 +1902,6 @@
     "lugar": "Sala La Riviera",
     "url_evento": "https://www.entradas.com/event/ligabue-sala-la-riviera-20391870/?Affiliate=RIV",
     "fuente": "https://salariviera.com/conciertossalariviera/"
-  },
-  {
-    "titulo": "LA PROHIBIDA (Amigas de Verbena)",
-    "fecha": "2026-05-03",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/la-prohibida-amigas-de-verbena/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "Luis Zahera - Chungo",
@@ -2007,20 +1944,6 @@
     "lugar": "Sala de Cámara",
     "url_evento": "https://auditorionacional.inaem.gob.es/es/programacion/fundacion-scherzo-mikhail-pletnev-marc-bouchkov",
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
-  },
-  {
-    "titulo": "BOA SUNET + REDTONE",
-    "fecha": "2026-05-04",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/boa-sunet-redtone/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "Cave Sessions: Fonnzer b2b Drevan + Duran + Andrøx3n",
-    "fecha": "2026-05-04",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/cave-sessions-perverse-siblings-duran-androx3n/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "1, 2, 3... ¡Magia! - Javi Rufo",
@@ -2198,20 +2121,6 @@
     "fuente": "https://www.salabut.es/agenda-conciertos/"
   },
   {
-    "titulo": "ADRIFT (Sound Isidro)",
-    "fecha": "2026-05-08",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/adrift-sound-isidro/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "Neon StarClub: Forrealnow + Aemilius + Kanseko  + Velasko",
-    "fecha": "2026-05-08",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/neon-starclub-una1ka-aliiskittyxao-bendiite-offvazz/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "CERVATANA [Sound Isidro]",
     "fecha": "2026-05-08",
     "lugar": "Sala El Sol",
@@ -2266,13 +2175,6 @@
     "lugar": "Sala Sinfónica",
     "url_evento": "https://auditorionacional.inaem.gob.es/es/programacion/ocne-sinfonico-19-4",
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
-  },
-  {
-    "titulo": "CARDIAC feat. DRIX RISK + LUST + AGGRESSIVE & VOICELESS",
-    "fecha": "2026-05-09",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/cardiac-feat-drix-risk-lust-aggressive-voiceless/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "PRIEST + DEAD LIGHTS",
@@ -2359,13 +2261,6 @@
     "fuente": "https://teatroeslava.com/conciertos-madrid/"
   },
   {
-    "titulo": "PAPOOZ + TELEPÁTICOS",
-    "fecha": "2026-05-10",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/papooz-telepaticos/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "MARÍA RUIZ & MOCCHI",
     "fecha": "2026-05-10",
     "lugar": "Sala El Sol",
@@ -2443,20 +2338,6 @@
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
   },
   {
-    "titulo": "VATOCHOLO (Sound isidro)",
-    "fecha": "2026-05-11",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/vatocholo-sound-isidro/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "DELGADO",
-    "fecha": "2026-05-11",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/delgado/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "Diario Vivo",
     "fecha": "2026-05-11",
     "lugar": "Teatro Gran Vía",
@@ -2532,20 +2413,6 @@
     "lugar": "Sala de Cámara",
     "url_evento": "https://auditorionacional.inaem.gob.es/es/programacion/cndm-cuarteto-quiroga-y-jose-antonio-lopez",
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
-  },
-  {
-    "titulo": "BYWATER CALL",
-    "fecha": "2026-05-14",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/bywater-call/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "Neon StarClub: Nine B + Kaos + KindraPatri b2b Chesko",
-    "fecha": "2026-05-14",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/neon-starclub-5/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "ARIZONA BABY [Sound Isidro]",
@@ -2646,13 +2513,6 @@
     "fuente": "https://www.salabut.es/agenda-conciertos/"
   },
   {
-    "titulo": "SISTEMA DE ENTRETENIMIENTO + WALDO FALDO (Sound Isidro)",
-    "fecha": "2026-05-16",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/sistema-de-entretenimiento-waldo-faldo-sound-isidro/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "ASILO FEST [1ª FECHA]",
     "fecha": "2026-05-16",
     "lugar": "Sala El Sol",
@@ -2723,27 +2583,6 @@
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
   },
   {
-    "titulo": "MANNY CALAVERA + HURACÁN ROMÁNTICA",
-    "fecha": "2026-05-17",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/manny-calavera-huracan-romantica/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "CANCELADO CIELO SUBMARINO",
-    "fecha": "2026-05-17",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/cielo-submarino-2/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "Cancelado",
-    "fecha": "2026-05-17",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/agenda/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "ASILO FEST [2ª FECHA]",
     "fecha": "2026-05-17",
     "lugar": "Sala El Sol",
@@ -2805,27 +2644,6 @@
     "lugar": "Sala Sinfónica",
     "url_evento": "https://auditorionacional.inaem.gob.es/es/programacion/excelentia-los-10-grandes-del-cine-2",
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
-  },
-  {
-    "titulo": "MICK HARVEY + AMANDA ACEVEDO",
-    "fecha": "2026-05-18",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/mick-harvey-amanda-acevedo/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "DALÍ",
-    "fecha": "2026-05-18",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/dali/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "SED + BORJA NIUT",
-    "fecha": "2026-05-19",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/sed/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "Ciclo de conferencias: Breve historia del blockbuster",
@@ -2947,20 +2765,6 @@
     "fuente": "https://teatroeslava.com/conciertos-madrid/"
   },
   {
-    "titulo": "CHICO BLANCO + BOYE",
-    "fecha": "2026-05-22",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/boye-chico-blanco/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "Neon StarClub: Salomelody + Frantri + Carl0ta b2b Kidgummy",
-    "fecha": "2026-05-22",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/neon-starclub-6/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "Free Britney",
     "fecha": "2026-05-22",
     "lugar": "Teatro Real Carlos III de Aranjuez",
@@ -3015,13 +2819,6 @@
     "lugar": "Sala But",
     "url_evento": "https://ochoymedioclub.com/conciertos/cero-segunda-fecha/?srsltid=AfmBOorz72PJ69j6f8Jl23SHTKCd2XKDyQx2ezRqhs3KGcwgrWkNRL_T",
     "fuente": "https://www.salabut.es/agenda-conciertos/"
-  },
-  {
-    "titulo": "JAVIER SOLO Y LA BANDA DEL VECINO",
-    "fecha": "2026-05-23",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/javier-solo-y-la-banda-del-vecino/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "BARIRI [Sound Isidro]",
@@ -3115,20 +2912,6 @@
     "fuente": "https://teatroeslava.com/conciertos-madrid/"
   },
   {
-    "titulo": "JAULA DE GRILLOS",
-    "fecha": "2026-05-24",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/jaula-de-grillos/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "Guacamayo presenta: Baile Mad – Eletrofunk! + Vinil Vibes",
-    "fecha": "2026-05-24",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/guacamayo-presenta-baile-mad-eletrofunk-vinil-vibes/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "Madison Beer – The Locked Tour",
     "fecha": "2026-05-24",
     "lugar": "Arena",
@@ -3190,20 +2973,6 @@
     "lugar": "Sala de Cámara",
     "url_evento": "https://auditorionacional.inaem.gob.es/es/programacion/mercados-en-crescendo-orquesta-camerata-musicalis-chaikovski-2013-souvenir-de-florencia",
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
-  },
-  {
-    "titulo": "ATAQUE ESCAMPE + FAMILIA CAAMAGNO",
-    "fecha": "2026-05-25",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/ataque-escampe-familia-caamagno/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "PAPAWANDA + SOUND OF COLORS",
-    "fecha": "2026-05-25",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/papawanda-sound-of-colors/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "Trio Sin Tiempo. Leo Genovese – Mariano Otero – Sergio Verdinelli",
@@ -3276,13 +3045,6 @@
     "fuente": "https://www.salabut.es/agenda-conciertos/"
   },
   {
-    "titulo": "Cave Sessions: Pulpix + Syperx + Raulnvkx",
-    "fecha": "2026-05-28",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/cave-sessions-pulpix-syperx-raulnvkx/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "LAAZA",
     "fecha": "2026-05-28",
     "lugar": "Sala El Sol",
@@ -3330,20 +3092,6 @@
     "lugar": "Sala But",
     "url_evento": "https://ochoymedioclub.com/conciertos/la-milagrosa/?srsltid=AfmBOoo_cVxUEtqSTP1YJIGEMJc6aF9OKyo6H--DHw3awXrdF6_zMayp",
     "fuente": "https://www.salabut.es/agenda-conciertos/"
-  },
-  {
-    "titulo": "LA ÉLITE album release party (+ Club & Infanta)",
-    "fecha": "2026-05-29",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/la-elite-album-release-party-club-infanta/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "Neon StarClub: El Wiwi + Virtual Flavour + La Trampa",
-    "fecha": "2026-05-29",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/neon-starclub-7/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "TERROR MILK + PABLO SOLO",
@@ -3416,13 +3164,6 @@
     "fuente": "https://www.salabut.es/agenda-conciertos/"
   },
   {
-    "titulo": "ALIS + SOYLA + PATRICIA DOMÍNGUEZ",
-    "fecha": "2026-05-30",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/alis-soyla/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "El nuevo musical de los 80s 90s",
     "fecha": "2026-05-30",
     "lugar": "Teatro Gran Vía",
@@ -3493,20 +3234,6 @@
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
   },
   {
-    "titulo": "CANCELADO EL BOBO DE LAS 3000 (Sound Isidro)",
-    "fecha": "2026-05-31",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/el-bobo-de-las-3000-sound-isidro/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
-    "titulo": "Cancelado",
-    "fecha": "2026-05-31",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/agenda/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "Rata Blanca",
     "fecha": "2026-05-31",
     "lugar": "Sala La Riviera",
@@ -3542,13 +3269,6 @@
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
   },
   {
-    "titulo": "FILLAS DE CASSANDRA (Escenarios Vibra Mahou + AIE En Ruta)",
-    "fecha": "2026-06-01",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/eventos/fillas-de-cassandra-escenarios-vibra-mahou-aie-en-ruta/",
-    "fuente": "https://salaelsol.com/agenda/"
-  },
-  {
     "titulo": "Visitas dialogadas Matadero Madrid Centro de Creación Contemporánea",
     "fecha": "2026-06-01",
     "lugar": "Matadero Madrid",
@@ -3575,13 +3295,6 @@
     "lugar": "Sala Sinfónica",
     "url_evento": "https://auditorionacional.inaem.gob.es/es/programacion/fundacion-scherzo-arcadi-volodos-4",
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
-  },
-  {
-    "titulo": "30 Abr 24",
-    "fecha": "2026-06-02",
-    "lugar": "Sala El Sol",
-    "url_evento": "https://salaelsol.com/agenda/",
-    "fuente": "https://salaelsol.com/agenda/"
   },
   {
     "titulo": "Dani Martínez - Remember",

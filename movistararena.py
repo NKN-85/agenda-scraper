@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
-from utils import HEADERS, agregar_evento
+from utils import HEADERS, agregar_evento, get_url
 from helpers.texto import normalizar_texto
 
 
@@ -68,8 +68,8 @@ def sacar_movistararena():
     eventos = []
     vistos = set()
 
-    respuesta = requests.get(url, headers=HEADERS, verify=False, timeout=20)
-    respuesta.raise_for_status()
+    # 🔥 CAMBIO AQUÍ
+    respuesta = get_url(url, timeout=20)
 
     soup = BeautifulSoup(respuesta.text, "html.parser")
 

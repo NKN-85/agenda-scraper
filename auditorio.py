@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
-from utils import HEADERS, agregar_evento
+from utils import HEADERS, agregar_evento, get_url
 
 
 def convertir_fecha_auditorio(texto):
@@ -66,8 +66,8 @@ def sacar_auditorio():
         else:
             url = f"{url_base}?b_start:int={offset}"
 
-        resp = session.get(url, headers=HEADERS, verify=False, timeout=20)
-        resp.raise_for_status()
+        # 🔥 CAMBIO AQUÍ
+        resp = get_url(url, session=session, timeout=20)
 
         soup = BeautifulSoup(resp.text, "html.parser")
 

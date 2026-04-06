@@ -3,7 +3,7 @@ import re
 from datetime import date
 from urllib.parse import urljoin
 
-from utils import HEADERS, agregar_evento
+from utils import HEADERS, agregar_evento, get_url
 from helpers.texto import normalizar_texto
 from helpers.avisos import avisar
 from helpers.fichas import abrir_ficha, extraer_titulo, extraer_lineas
@@ -108,8 +108,7 @@ def sacar_alcazar():
 
     session = requests.Session()
 
-    respuesta = session.get(url, headers=HEADERS, verify=False, timeout=10)
-    respuesta.raise_for_status()
+    respuesta = get_url(url, session=session, timeout=10)
 
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(respuesta.text, "html.parser")

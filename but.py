@@ -8,6 +8,7 @@ from utils import (
     es_futura_o_hoy,
     agregar_evento,
     construir_fecha,
+    get_url
 )
 
 
@@ -35,8 +36,9 @@ def sacar_but():
     eventos = []
     vistos = set()
 
-    respuesta = requests.get(url, headers=HEADERS, verify=False, timeout=20)
-    respuesta.raise_for_status()
+    # 🔥 CAMBIO AQUÍ
+    respuesta = get_url(url, timeout=20)
+
     soup = BeautifulSoup(respuesta.text, "html.parser")
 
     lineas = [

@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import re
 from datetime import date
 
-from utils import HEADERS, convertir_fecha_elsol
+from utils import HEADERS, convertir_fecha_elsol, get_url
 
 
 def sacar_elsol():
@@ -11,8 +11,9 @@ def sacar_elsol():
     eventos = []
     vistos = set()
 
-    respuesta = requests.get(url, headers=HEADERS, verify=False, timeout=15)
-    respuesta.raise_for_status()
+    # 🔥 CAMBIO AQUÍ
+    respuesta = get_url(url, timeout=15)
+
     soup = BeautifulSoup(respuesta.text, "html.parser")
 
     # mapa titulo -> url evento
@@ -63,7 +64,7 @@ def sacar_elsol():
             fecha = linea
             fecha_evento = convertir_fecha_elsol(fecha)
 
-            # descartar bloque raro de verano que mete mucha descripción
+            # descartar bloque raro de verano
             partes_fecha = fecha.lower().split()
             mes_fecha = partes_fecha[2] if len(partes_fecha) == 3 else ""
             if mes_fecha in meses_bloque_malo:
@@ -84,7 +85,6 @@ def sacar_elsol():
                 if len(candidato) < 3:
                     continue
 
-                # anti-basura
                 if len(candidato) > 60:
                     continue
 

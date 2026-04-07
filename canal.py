@@ -6,71 +6,232 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from utils import (
-    HEADERS,
     limpiar_texto,
-    es_futura_o_hoy,
-    agregar_evento,
     construir_fecha,
-    get_url
+    get_url,
+    agregar_evento
 )
 
 
-def convertir_fecha_canal(texto):
+def primera_fecha_canal(texto):
     texto = limpiar_texto(texto).lower()
 
-    def mk(dia, mes_txt, anio):
-        return construir_fecha(dia, mes_txt, anio)
-
+    # Del 26 de marzo al 19 de abril de 2026 -> devolver 26 marzo 2026
     m = re.search(
-        r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+\d{1,2}\s+de\s+[a-záéíóú]+\s+de\s+(\d{4})",
+        r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
     )
     if m:
-        return mk(int(m.group(1)), m.group(2), int(m.group(3)))
+        return construir_fecha(int(m.group(1)), m.group(2), int(m.group(5)))
 
+    # Del 19 de marzo al 8 de mayo -> devolver 19 marzo año actual
     m = re.search(
-        r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+\d{1,2}\s+de\s+[a-záéíóú]+",
+        r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+(\d{1,2})\s+de\s+([a-záéíóú]+)",
         texto
     )
     if m:
-        return mk(int(m.group(1)), m.group(2), date.today().year)
+        return construir_fecha(int(m.group(1)), m.group(2), date.today().year)
 
+    # 10, 11 y 12 de abril de 2026 -> devolver 10 abril 2026
     m = re.search(
-        r"(\d{1,2})\s*,\s*\d{1,2}\s+y\s+\d{1,2}\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        r"(\d{1,2})\s*,\s*(\d{1,2})\s+y\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
     )
     if m:
-        return mk(int(m.group(1)), m.group(2), int(m.group(3)))
+        return construir_fecha(int(m.group(1)), m.group(4), int(m.group(5)))
 
+    # 11 y 12 de abril de 2026 -> devolver 11 abril 2026
     m = re.search(
-        r"(\d{1,2})(?:\s*,\s*\d{1,2})+\s+y\s+\d{1,2}\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        r"(\d{1,2})\s+y\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
     )
     if m:
-        return mk(int(m.group(1)), m.group(2), int(m.group(3)))
+        return construir_fecha(int(m.group(1)), m.group(3), int(m.group(4)))
 
-    m = re.search(
-        r"(\d{1,2})\s+y\s+\d{1,2}\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
-        texto
-    )
-    if m:
-        return mk(int(m.group(1)), m.group(2), int(m.group(3)))
-
-    m = re.search(
-        r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s+(\d{4})",
-        texto
-    )
-    if m:
-        return mk(int(m.group(1)), m.group(2), int(m.group(3)))
-
+    # 12 de abril de 2026
     m = re.search(
         r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
     )
     if m:
-        return mk(int(m.group(1)), m.group(2), int(m.group(3)))
+        return construir_fecha(int(m.group(1)), m.group(2), int(m.group(3)))
+
+    # 12 de abril 2026
+    m = re.search(
+        r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s+(\d{4})",
+        texto
+    )
+    if m:
+        return construir_fecha(int(m.group(1)), m.group(2), int(m.group(3)))
 
     return None
+
+
+def lineas_limpias(soup):
+    return [
+        limpiar_texto(l)
+        for l in soup.get_text("\n", strip=True).splitlines()
+        if limpiar_texto(l)
+    ]
+
+
+def parsear_metadatos_fechas_canal(texto):
+    texto = limpiar_texto(texto).lower()
+
+    # Del 26 de marzo al 19 de abril de 2026
+    m = re.search(
+        r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        inicio = construir_fecha(int(m.group(1)), m.group(2), int(m.group(5)))
+        fin = construir_fecha(int(m.group(3)), m.group(4), int(m.group(5)))
+        if inicio and fin:
+            return {
+                "rango_fechas": True,
+                "fecha_inicio": inicio,
+                "fecha_fin": fin,
+                "fechas_funcion": []
+            }
+
+    # Del 19 de marzo al 8 de mayo
+    m = re.search(
+        r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+(\d{1,2})\s+de\s+([a-záéíóú]+)",
+        texto
+    )
+    if m:
+        anio = date.today().year
+        inicio = construir_fecha(int(m.group(1)), m.group(2), anio)
+        fin = construir_fecha(int(m.group(3)), m.group(4), anio)
+        if inicio and fin:
+            return {
+                "rango_fechas": True,
+                "fecha_inicio": inicio,
+                "fecha_fin": fin,
+                "fechas_funcion": []
+            }
+
+    # 10, 11 y 12 de abril de 2026
+    m = re.search(
+        r"(\d{1,2})\s*,\s*(\d{1,2})\s+y\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        fechas = [
+            construir_fecha(int(m.group(1)), m.group(4), int(m.group(5))),
+            construir_fecha(int(m.group(2)), m.group(4), int(m.group(5))),
+            construir_fecha(int(m.group(3)), m.group(4), int(m.group(5))),
+        ]
+        fechas = [f for f in fechas if f]
+        if fechas:
+            return {
+                "rango_fechas": False,
+                "fecha_inicio": fechas[0],
+                "fecha_fin": fechas[-1],
+                "fechas_funcion": fechas
+            }
+
+    # 11 y 12 de abril de 2026
+    m = re.search(
+        r"(\d{1,2})\s+y\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        fechas = [
+            construir_fecha(int(m.group(1)), m.group(3), int(m.group(4))),
+            construir_fecha(int(m.group(2)), m.group(3), int(m.group(4))),
+        ]
+        fechas = [f for f in fechas if f]
+        if fechas:
+            return {
+                "rango_fechas": False,
+                "fecha_inicio": fechas[0],
+                "fecha_fin": fechas[-1],
+                "fechas_funcion": fechas
+            }
+
+    # 12 de abril de 2026
+    m = re.search(
+        r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        f = construir_fecha(int(m.group(1)), m.group(2), int(m.group(3)))
+        if f:
+            return {
+                "rango_fechas": False,
+                "fecha_inicio": f,
+                "fecha_fin": f,
+                "fechas_funcion": [f]
+            }
+
+    return None
+
+
+def ficha_canal_sigue_vigente(soup):
+    hoy = date.today()
+    lineas = lineas_limpias(soup)
+
+    for linea in lineas:
+        datos = parsear_metadatos_fechas_canal(linea)
+        if not datos:
+            continue
+
+        if datos["rango_fechas"]:
+            return datos["fecha_fin"] >= hoy
+
+        return any(f >= hoy for f in datos["fechas_funcion"])
+
+    return False
+
+
+def extraer_titulo_y_primera_fecha_desde_ficha(soup):
+    lineas = lineas_limpias(soup)
+
+    descartes = {
+        "información útil",
+        "informacion útil",
+        "informacion util",
+        "fechas y precios",
+        "información práctica",
+        "informacion práctica",
+        "informacion practica",
+        "comprar",
+        "comprar entradas >",
+        "comprar entradas",
+        "ficha artística",
+        "ficha artistica",
+        "ofertas",
+        "programa",
+    }
+
+    for i, linea in enumerate(lineas):
+        fecha = primera_fecha_canal(linea)
+        if not fecha:
+            continue
+
+        j = i - 1
+        while j >= 0:
+            candidata = limpiar_texto(lineas[j])
+            candidata_l = candidata.lower()
+
+            if not candidata:
+                j -= 1
+                continue
+
+            if candidata_l in descartes:
+                j -= 1
+                continue
+
+            if len(candidata) > 160:
+                j -= 1
+                continue
+
+            return candidata, fecha
+
+        break
+
+    return None, None
 
 
 def sacar_canal():
@@ -81,7 +242,6 @@ def sacar_canal():
     vistos = set()
 
     try:
-        # 🔥 CAMBIO AQUÍ (adiós get_html)
         r = get_url(url, timeout=40)
     except requests.exceptions.RequestException as e:
         print(f"[canal] fuente omitida: {e}")
@@ -89,82 +249,35 @@ def sacar_canal():
 
     soup = BeautifulSoup(r.text, "html.parser")
 
-    lineas = [
-        limpiar_texto(l)
-        for l in soup.get_text("\n", strip=True).splitlines()
-        if limpiar_texto(l)
-    ]
+    urls_evento = []
+    urls_vistas = set()
 
-    urls_ordenadas = []
     for a in soup.find_all("a", href=True):
-        texto = limpiar_texto(a.get_text(" ", strip=True))
         href = urljoin(url, a.get("href", "").strip())
 
-        if texto == "+ Info" and href not in urls_ordenadas:
-            urls_ordenadas.append(href)
-
-    candidatos = []
-
-    i = 0
-    while i < len(lineas):
-        linea = lineas[i]
-
-        if linea in {
-            "+ Info",
-            "Comprar",
-            "PRÓXIMAMENTE",
-            "CONSULTA AQUÍ EL PDF CON LA PROGRAMACIÓN",
-        }:
-            i += 1
+        if "/espectaculo/" not in href:
             continue
 
-        fecha_evento = convertir_fecha_canal(linea)
-        if not fecha_evento:
-            i += 1
+        if href in urls_vistas:
             continue
 
-        anterior_1 = lineas[i - 1] if i >= 1 else ""
-        anterior_2 = lineas[i - 2] if i >= 2 else ""
+        urls_vistas.add(href)
+        urls_evento.append(href)
 
-        titulo = None
-
-        pistas_subtitulo = [
-            "dirección:",
-            "música",
-            "teatro",
-            "danza",
-            "circo",
-            "festival",
-            "programación",
-            "canal",
-            "estreno",
-            "comisario",
-        ]
-
-        if anterior_2 and anterior_1:
-            if len(anterior_1) < 80 and any(x in anterior_1.lower() for x in pistas_subtitulo):
-                titulo = anterior_2
-            else:
-                titulo = anterior_1
-        else:
-            titulo = anterior_1
-
-        titulo = limpiar_texto(titulo)
-
-        if not titulo:
-            i += 1
+    for href in urls_evento:
+        try:
+            r_det = get_url(href, timeout=40)
+        except requests.exceptions.RequestException:
             continue
 
-        if es_futura_o_hoy(fecha_evento):
-            candidatos.append((titulo, fecha_evento))
+        soup_det = BeautifulSoup(r_det.text, "html.parser")
+        titulo, fecha_evento = extraer_titulo_y_primera_fecha_desde_ficha(soup_det)
 
-        i += 1
+        if not titulo or not fecha_evento:
+            continue
 
-    total = min(len(candidatos), len(urls_ordenadas))
-
-    for idx in range(total):
-        titulo, fecha_evento = candidatos[idx]
-        url_evento = urls_ordenadas[idx]
+        if not ficha_canal_sigue_vigente(soup_det):
+            continue
 
         agregar_evento(
             eventos,
@@ -172,7 +285,7 @@ def sacar_canal():
             titulo,
             fecha_evento,
             lugar,
-            url_evento,
+            href,
             url
         )
 

@@ -13,6 +13,5 @@ env/
 .DS_Store
 Thumbs.db
 
-# Archivos generados
+# Archivos generados solo locales
 eventos.csv
-eventos.json

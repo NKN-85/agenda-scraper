@@ -3,7 +3,7 @@ name: Actualizar agenda
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 12 * * 1"
+    - cron: "0 9 * * 4"
 
 permissions:
   contents: write
@@ -37,7 +37,7 @@ jobs:
       - name: Comprobar cambios
         id: cambios
         run: |
-          git add eventos.csv eventos.json
+          git add eventos.json eventos_master.json
           if git diff --cached --quiet; then
             echo "hay_cambios=false" >> $GITHUB_OUTPUT
           else

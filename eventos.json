@@ -455,17 +455,17 @@
     "fuente": "https://berlincafe.es/programas/"
   },
   {
-    "titulo": "ISMA ROMERO TIRA Y AFLOJA",
-    "fecha": "2026-04-11",
-    "lugar": "La Sala del Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=isma-romero-tira-y-afloja",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "BAD GYAL TOUR 2026",
     "fecha": "2026-04-11",
     "lugar": "Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=bad-gyal-tour-2026",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "ISMA ROMERO TIRA Y AFLOJA",
+    "fecha": "2026-04-11",
+    "lugar": "La Sala del Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=isma-romero-tira-y-afloja",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -1540,17 +1540,17 @@
     "fuente": "https://berlincafe.es/programas/"
   },
   {
-    "titulo": "HOFE",
-    "fecha": "2026-04-25",
-    "lugar": "La Sala del Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=hofe",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "ETS BIHOTZEN KONKISTA",
     "fecha": "2026-04-25",
     "lugar": "Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=ets-bihotzen-konkista",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "HOFE",
+    "fecha": "2026-04-25",
+    "lugar": "La Sala del Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=hofe",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -3073,17 +3073,17 @@
     "fuente": "https://salariviera.com/conciertossalariviera/"
   },
   {
-    "titulo": "LA OREJA DE VAN GOGH TANTAS COSAS QUE CONTAR TOUR 2026",
-    "fecha": "2026-05-28",
-    "lugar": "Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=la-oreja-de-van-gogh-tantas-cosas-que-contar-tour-2026",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "SONIA GÓMEZ",
     "fecha": "2026-05-28",
     "lugar": "La Sala del Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=sonia-g-mez",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "LA OREJA DE VAN GOGH TANTAS COSAS QUE CONTAR TOUR 2026",
+    "fecha": "2026-05-28",
+    "lugar": "Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=la-oreja-de-van-gogh-tantas-cosas-que-contar-tour-2026",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {

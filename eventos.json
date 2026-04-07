@@ -777,6 +777,13 @@
     "fuente": "https://berlincafe.es/programas/"
   },
   {
+    "titulo": "Sound of Fashion: Spring Breakers",
+    "fecha": "2026-04-16",
+    "lugar": "Café Berlín",
+    "url_evento": "https://berlincafe.es/programa/sound-of-fashion-spring-breakers/",
+    "fuente": "https://berlincafe.es/programas/"
+  },
+  {
     "titulo": "REAL MADRID VS. ESTRELLA ROJA BELGRADO JORNADA 38 EUROLIGA 25/26",
     "fecha": "2026-04-16",
     "lugar": "Movistar Arena",
@@ -1463,6 +1470,13 @@
     "fuente": "https://berlincafe.es/programas/"
   },
   {
+    "titulo": "Danke · Occibel + Dhermida",
+    "fecha": "2026-04-24",
+    "lugar": "Café Berlín",
+    "url_evento": "https://berlincafe.es/programa/danke-%c2%b7-occibel-dhermida/",
+    "fuente": "https://berlincafe.es/programas/"
+  },
+  {
     "titulo": "DABUTI 2026",
     "fecha": "2026-04-24",
     "lugar": "La Sala del Movistar Arena",
@@ -1537,6 +1551,13 @@
     "fecha": "2026-04-25",
     "lugar": "Café Berlín",
     "url_evento": "https://berlincafe.es/programa/mastretta-4/",
+    "fuente": "https://berlincafe.es/programas/"
+  },
+  {
+    "titulo": "Blend · Timo Otten + Nacho Larache + Marcos Boricua + Mauro Noguero",
+    "fecha": "2026-04-25",
+    "lugar": "Café Berlín",
+    "url_evento": "https://berlincafe.es/programa/blend-%c2%b7-timo-otten-nacho-larache-marcos-boricua-mauro-noguero/",
     "fuente": "https://berlincafe.es/programas/"
   },
   {
@@ -1631,17 +1652,17 @@
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
-    "titulo": "CARDELLINO EUROPE TOUR",
-    "fecha": "2026-04-26",
-    "lugar": "La Sala del Movistar Arena",
-    "url_evento": "https://www.movistararena.es/informacion?evento=cardellino-europe-tour",
-    "fuente": "https://www.movistararena.es/calendario"
-  },
-  {
     "titulo": "RÜFÜS DU SOL EUROPE 26",
     "fecha": "2026-04-26",
     "lugar": "Movistar Arena",
     "url_evento": "https://www.movistararena.es/informacion?evento=rufus-du-sol-europe-26",
+    "fuente": "https://www.movistararena.es/calendario"
+  },
+  {
+    "titulo": "CARDELLINO EUROPE TOUR",
+    "fecha": "2026-04-26",
+    "lugar": "La Sala del Movistar Arena",
+    "url_evento": "https://www.movistararena.es/informacion?evento=cardellino-europe-tour",
     "fuente": "https://www.movistararena.es/calendario"
   },
   {
@@ -2338,6 +2359,13 @@
     "fuente": "https://gruposmedia.com/teatro-gran-via/"
   },
   {
+    "titulo": "Canciones de cine en español",
+    "fecha": "2026-05-11",
+    "lugar": "Teatro Alcázar",
+    "url_evento": "https://gruposmedia.com/cartelera/canciones-de-cine-en-espanol/",
+    "fuente": "https://gruposmedia.com/teatro-alcazar/"
+  },
+  {
     "titulo": "ARCÁNGEL LA 8VA MARAVILLA WORLD TOUR 20 ANIVERSARIO",
     "fecha": "2026-05-11",
     "lugar": "Movistar Arena",
@@ -2574,6 +2602,13 @@
     "lugar": "Sala de Cámara",
     "url_evento": "https://auditorionacional.inaem.gob.es/es/programacion/madrid-sinfonica-msda-falla-y-ole",
     "fuente": "https://auditorionacional.inaem.gob.es/es/programacion"
+  },
+  {
+    "titulo": "Festival Rock Europa 2026",
+    "fecha": "2026-05-17",
+    "lugar": "Teatro Eslava",
+    "url_evento": "https://teatroeslava.com/conciertos/festival-rock-europa-2026/",
+    "fuente": "https://teatroeslava.com/conciertos-madrid/"
   },
   {
     "titulo": "ASILO FEST [2ª FECHA]",

@@ -370,7 +370,7 @@ def enriquecer_evento_nuevo(evento):
     evento["first_seen"] = ahora
     evento["last_seen"] = ahora
     evento["estado"] = "nuevo"
-    evento["enriched"] = False
+    evento["enriched"] = True
     evento["tipo_evento"] = tipo_evento
     evento["tags"] = tags
 

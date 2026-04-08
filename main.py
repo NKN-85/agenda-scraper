@@ -389,6 +389,7 @@ def actualizar_evento_existente(evento_master, evento_actual):
     evento_master["fuente"] = evento_actual.get("fuente", evento_master.get("fuente", ""))
     evento_master["last_seen"] = ahora
     evento_master["estado"] = "activo"
+    evento_master["enriched"] = True
 
     if "tipo_evento" not in evento_master:
         tipo_evento = clasificar_tipo_evento(evento_actual)

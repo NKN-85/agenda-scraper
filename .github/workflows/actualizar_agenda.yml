@@ -37,7 +37,7 @@ jobs:
       - name: Comprobar cambios
         id: cambios
         run: |
-          git add eventos.json eventos_master.json
+          git add eventos_master.json
           if git diff --cached --quiet; then
             echo "hay_cambios=false" >> $GITHUB_OUTPUT
           else

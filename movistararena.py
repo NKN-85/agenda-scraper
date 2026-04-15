@@ -1,119 +1,151 @@
-import requests
-import re
+import json
 from datetime import date
 from urllib.parse import urljoin
 
-from bs4 import BeautifulSoup
-
-from utils import HEADERS, agregar_evento, get_url
-from helpers.texto import normalizar_texto
+from utils import agregar_evento, get_url
 
 
-def convertir_fecha_movistararena(texto):
-    meses = {
-        "enero": 1,
-        "febrero": 2,
-        "marzo": 3,
-        "abril": 4,
-        "mayo": 5,
-        "junio": 6,
-        "julio": 7,
-        "agosto": 8,
-        "septiembre": 9,
-        "octubre": 10,
-        "noviembre": 11,
-        "diciembre": 12,
-    }
+def limpiar_texto(texto):
+    return " ".join((texto or "").split()).strip()
 
-    texto = " ".join(texto.split()).strip().lower()
 
-    m = re.search(
-        r"(?:lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s+(\d{1,2})\s+([a-záéíóú]+)\s+(\d{4})",
-        texto
-    )
-    if not m:
+def extraer_bloque_json(js_texto):
+    """
+    Busca el contenido de:
+    window.__SESSIONS_BY_MONTH__ = {...}
+    sin depender de regex frágiles.
+    """
+    marcador = "window.__SESSIONS_BY_MONTH__ ="
+    pos = js_texto.find(marcador)
+
+    if pos == -1:
         return None
 
-    dia = int(m.group(1))
-    mes = meses.get(m.group(2))
-    anio = int(m.group(3))
+    resto = js_texto[pos + len(marcador):].strip()
 
-    if not mes:
+    # Quitamos posible ; final
+    if resto.endswith(";"):
+        resto = resto[:-1].strip()
+
+    # Nos quedamos desde la primera { hasta la última }
+    inicio = resto.find("{")
+    fin = resto.rfind("}")
+
+    if inicio == -1 or fin == -1 or fin <= inicio:
         return None
+
+    return resto[inicio:fin + 1]
+
+
+def parsear_sessions_data(js_texto):
+    bloque_json = extraer_bloque_json(js_texto)
+    if not bloque_json:
+        return {}
 
     try:
-        return date(anio, mes, dia)
-    except ValueError:
-        return None
+        return json.loads(bloque_json)
+    except Exception as e:
+        print(f"[movistararena] error parseando JSON: {e}")
+        return {}
 
 
-def obtener_lugar_movistararena(texto):
-    texto_norm = normalizar_texto(texto).lower()
+def construir_titulo(evento):
+    titulo = limpiar_texto(evento.get("title", ""))
+    return titulo
 
-    if "la sala movistar" in texto_norm:
-        return "La Sala del Movistar Arena"
+
+def obtener_lugar(evento):
+    venue = evento.get("venue") or {}
+    nombre = limpiar_texto(venue.get("name", ""))
+    ciudad = limpiar_texto(venue.get("city", ""))
+
+    if nombre and ciudad:
+        return f"{nombre} · {ciudad}"
+    if nombre:
+        return nombre
 
     return "Movistar Arena"
 
 
-def limpiar_titulo_movistararena(texto):
-    texto = texto.replace("\xa0", " ")
-    texto = re.sub(r"<br\s*/?>", " ", texto, flags=re.IGNORECASE)
-    texto = re.sub(r"\s+", " ", texto).strip()
-    return texto
+def obtener_url_evento(evento, base_url):
+    cta = evento.get("cta") or {}
+    info_url = limpiar_texto(cta.get("info_url", ""))
+    slug = limpiar_texto(evento.get("slug", ""))
+
+    if info_url:
+        return urljoin(base_url, info_url)
+
+    if slug:
+        return urljoin(base_url, f"/programacion/evento/{slug}")
+
+    return ""
+
+
+def convertir_fecha_iso(fecha_texto):
+    if not fecha_texto:
+        return None
+
+    try:
+        anio, mes, dia = fecha_texto.split("-")
+        return date(int(anio), int(mes), int(dia))
+    except Exception:
+        return None
 
 
 def sacar_movistararena():
-    url = "https://www.movistararena.es/calendario"
+    base_url = "https://www.movistararena.es"
+    url_datos = "https://www.movistararena.es/programacion/sessions-data.js.php?lang=es"
+
     eventos = []
     vistos = set()
 
-    # 🔥 CAMBIO AQUÍ
-    respuesta = get_url(url, timeout=20)
+    respuesta = get_url(url_datos, timeout=20)
+    texto = respuesta.text
 
-    soup = BeautifulSoup(respuesta.text, "html.parser")
+    datos = parsear_sessions_data(texto)
 
-    bloques = soup.select("div.product-thumb")
+    if not datos:
+        print("[movistararena] no se pudieron extraer datos de sessions-data.js.php")
+        return eventos
 
-    for bloque in bloques:
-        enlace_el = bloque.select_one('header.product-header a[href*="informacion?evento="]')
-        categoria_el = bloque.select_one("ul.product-price-list span.product-price")
-        titulo_el = bloque.select_one("div.product-inner h5")
-        fecha_el = bloque.select_one("div.product-inner h2.product-title")
+    hoy = date.today()
+    total_bruto = 0
 
-        if not enlace_el or not categoria_el or not titulo_el or not fecha_el:
+    for _, lista_eventos in datos.items():
+        if not isinstance(lista_eventos, list):
             continue
 
-        href = enlace_el.get("href", "").strip()
-        if not href:
-            continue
+        for evento in lista_eventos:
+            if not isinstance(evento, dict):
+                continue
 
-        url_evento = urljoin(url, href)
+            total_bruto += 1
 
-        categoria = categoria_el.get_text(" ", strip=True)
-        lugar = obtener_lugar_movistararena(categoria)
+            titulo = construir_titulo(evento)
+            if not titulo:
+                continue
 
-        titulo = limpiar_titulo_movistararena(titulo_el.get_text(" ", strip=True))
-        fecha_texto = fecha_el.get_text(" ", strip=True)
+            fecha_evento = convertir_fecha_iso(evento.get("date", ""))
+            if not fecha_evento:
+                continue
 
-        if not titulo or not fecha_texto:
-            continue
+            if fecha_evento < hoy:
+                continue
 
-        fecha_evento = convertir_fecha_movistararena(fecha_texto)
-        if not fecha_evento:
-            continue
+            lugar = obtener_lugar(evento)
+            url_evento = obtener_url_evento(evento, base_url)
+            if not url_evento:
+                continue
 
-        if fecha_evento < date.today():
-            continue
+            agregar_evento(
+                eventos,
+                vistos,
+                titulo,
+                fecha_evento,
+                lugar,
+                url_evento,
+                url_datos
+            )
 
-        agregar_evento(
-            eventos,
-            vistos,
-            titulo,
-            fecha_evento,
-            lugar,
-            url_evento,
-            url
-        )
-
+    print(f"[movistararena] eventos brutos leídos: {total_bruto}")
     return eventos

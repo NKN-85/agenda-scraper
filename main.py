@@ -24,9 +24,110 @@ from berlin import sacar_berlin
 from movistararena import sacar_movistararena
 from auditorio import sacar_auditorio
 
-from utils import get_url, limpiar_texto, construir_fecha
+from utils import get_url, limpiar_texto, construir_fecha, normalizar_info_fecha
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+# -------------------------
+# HELPERS COMPATIBILIDAD
+# -------------------------
+
+def evento_es_dict(evento):
+    return isinstance(evento, dict)
+
+
+def fila_antigua_a_evento_dict(fila):
+    """
+    Compatibilidad temporal por si alguna sala sigue devolviendo:
+    [titulo, fecha_str, lugar, url_evento, fuente]
+    """
+    if not isinstance(fila, (list, tuple)) or len(fila) < 5:
+        return None
+
+    titulo, fecha, lugar, url_evento, fuente = fila[:5]
+
+    info_fecha = normalizar_info_fecha(fecha_evento=fecha)
+    if not info_fecha:
+        return None
+
+    return {
+        "titulo": limpiar_texto(titulo),
+        "fecha": info_fecha.get("fecha"),
+        "lugar": limpiar_texto(lugar),
+        "url_evento": limpiar_texto(url_evento),
+        "fuente": limpiar_texto(fuente),
+        "tipo_fecha": info_fecha.get("tipo_fecha"),
+        "rango_fechas": info_fecha.get("rango_fechas", False),
+        "fecha_inicio": info_fecha.get("fecha_inicio"),
+        "fecha_fin": info_fecha.get("fecha_fin"),
+        "fechas_funcion": info_fecha.get("fechas_funcion", []),
+        "dias_semana": info_fecha.get("dias_semana", []),
+        "texto_fecha_original": info_fecha.get("texto_fecha_original", ""),
+    }
+
+
+def normalizar_evento_entrada(evento):
+    """
+    Acepta dict enriquecido o fila antigua y devuelve siempre dict homogéneo.
+    """
+    if evento_es_dict(evento):
+        info_fecha = normalizar_info_fecha(
+            info_fecha={
+                "tipo_fecha": evento.get("tipo_fecha"),
+                "tipo": evento.get("tipo_fecha"),
+                "fecha": evento.get("fecha"),
+                "rango_fechas": evento.get("rango_fechas"),
+                "fecha_inicio": evento.get("fecha_inicio"),
+                "fecha_fin": evento.get("fecha_fin"),
+                "fechas_funcion": evento.get("fechas_funcion", []),
+                "dias_semana": evento.get("dias_semana", []),
+                "texto_fecha_original": evento.get("texto_fecha_original", ""),
+            },
+            fecha_evento=evento.get("fecha")
+        )
+
+        if not info_fecha:
+            return None
+
+        return {
+            "titulo": limpiar_texto(evento.get("titulo", "")),
+            "fecha": info_fecha.get("fecha"),
+            "lugar": limpiar_texto(evento.get("lugar", "")),
+            "url_evento": limpiar_texto(evento.get("url_evento", "")),
+            "fuente": limpiar_texto(evento.get("fuente", "")),
+            "tipo_fecha": info_fecha.get("tipo_fecha"),
+            "rango_fechas": info_fecha.get("rango_fechas", False),
+            "fecha_inicio": info_fecha.get("fecha_inicio"),
+            "fecha_fin": info_fecha.get("fecha_fin"),
+            "fechas_funcion": info_fecha.get("fechas_funcion", []),
+            "dias_semana": info_fecha.get("dias_semana", []),
+            "texto_fecha_original": info_fecha.get("texto_fecha_original", ""),
+        }
+
+    return fila_antigua_a_evento_dict(evento)
+
+
+def limpiar_eventos(eventos):
+    resultado = []
+
+    for evento in eventos:
+        normalizado = normalizar_evento_entrada(evento)
+        if not normalizado:
+            continue
+
+        if not normalizado.get("titulo"):
+            continue
+        if not normalizado.get("lugar"):
+            continue
+        if not normalizado.get("url_evento"):
+            continue
+        if not normalizado.get("fecha") and not normalizado.get("fecha_fin"):
+            continue
+
+        resultado.append(normalizado)
+
+    return resultado
 
 
 # -------------------------
@@ -36,41 +137,59 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def guardar_csv(eventos, nombre_archivo="eventos.csv"):
     with open(nombre_archivo, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f, delimiter=";")
-        writer.writerow(["TITULO EVENTO", "FECHA", "LUGAR", "URL EVENTO", "FUENTE"])
+        writer.writerow([
+            "TITULO EVENTO",
+            "FECHA",
+            "LUGAR",
+            "URL EVENTO",
+            "FUENTE",
+            "TIPO_FECHA",
+            "RANGO_FECHAS",
+            "FECHA_INICIO",
+            "FECHA_FIN",
+            "FECHAS_FUNCION",
+            "DIAS_SEMANA",
+            "TEXTO_FECHA_ORIGINAL",
+        ])
 
-        for fila in eventos:
-            writer.writerow(fila)
+        for evento in eventos:
+            writer.writerow([
+                evento.get("titulo", ""),
+                evento.get("fecha", ""),
+                evento.get("lugar", ""),
+                evento.get("url_evento", ""),
+                evento.get("fuente", ""),
+                evento.get("tipo_fecha", ""),
+                evento.get("rango_fechas", False),
+                evento.get("fecha_inicio", ""),
+                evento.get("fecha_fin", ""),
+                ",".join(evento.get("fechas_funcion", [])),
+                ",".join(str(x) for x in evento.get("dias_semana", [])),
+                evento.get("texto_fecha_original", ""),
+            ])
 
 
 def eventos_a_json(eventos):
     eventos_json = []
 
-    for fila in eventos:
-        if len(fila) < 5:
+    for evento in eventos:
+        normalizado = normalizar_evento_entrada(evento)
+        if not normalizado:
             continue
-
-        titulo, fecha, lugar, url_evento, fuente = fila
-
-        if not fecha or "/" not in fecha:
-            continue
-
-        partes = fecha.split("/")
-        if len(partes) != 3:
-            continue
-
-        dia, mes, anio = partes
-
-        if not (dia.isdigit() and mes.isdigit() and anio.isdigit()):
-            continue
-
-        fecha_iso = f"{anio}-{mes.zfill(2)}-{dia.zfill(2)}"
 
         eventos_json.append({
-            "titulo": titulo,
-            "fecha": fecha_iso,
-            "lugar": lugar,
-            "url_evento": url_evento,
-            "fuente": fuente
+            "titulo": normalizado.get("titulo"),
+            "fecha": normalizado.get("fecha"),
+            "lugar": normalizado.get("lugar"),
+            "url_evento": normalizado.get("url_evento"),
+            "fuente": normalizado.get("fuente"),
+            "tipo_fecha": normalizado.get("tipo_fecha"),
+            "rango_fechas": normalizado.get("rango_fechas", False),
+            "fecha_inicio": normalizado.get("fecha_inicio"),
+            "fecha_fin": normalizado.get("fecha_fin"),
+            "fechas_funcion": normalizado.get("fechas_funcion", []),
+            "dias_semana": normalizado.get("dias_semana", []),
+            "texto_fecha_original": normalizado.get("texto_fecha_original", ""),
         })
 
     return eventos_json
@@ -106,9 +225,8 @@ def guardar_master(eventos, nombre="eventos_master.json"):
 
 def clave_evento_json(evento):
     return (
-        evento.get("url_evento", "").strip(),
-        evento.get("fecha", "").strip(),
-        evento.get("lugar", "").strip().lower(),
+        (evento.get("url_evento", "") or "").strip().lower(),
+        (evento.get("lugar", "") or "").strip().lower(),
     )
 
 
@@ -117,7 +235,7 @@ def indexar_por_clave(eventos):
 
     for evento in eventos:
         clave = clave_evento_json(evento)
-        if clave[0] and clave[1]:
+        if clave[0]:
             indice[clave] = evento
 
     return indice
@@ -127,16 +245,29 @@ def indexar_por_clave(eventos):
 # ORDEN
 # -------------------------
 
-def clave_orden_fecha(fila):
-    if len(fila) < 2:
-        return datetime.max
+def clave_orden_fecha(evento):
+    """
+    Ordena por fecha representativa ISO.
+    """
+    if not isinstance(evento, dict):
+        evento = fila_antigua_a_evento_dict(evento)
+        if not evento:
+            return (datetime.max, "", "")
 
-    fecha = fila[1]
+    fecha = evento.get("fecha") or evento.get("fecha_fin") or ""
 
     try:
-        return datetime.strptime(fecha, "%d/%m/%Y")
+        return (
+            datetime.strptime(fecha, "%Y-%m-%d"),
+            evento.get("lugar", "").lower(),
+            evento.get("titulo", "").lower(),
+        )
     except Exception:
-        return datetime.max
+        return (
+            datetime.max,
+            evento.get("lugar", "").lower(),
+            evento.get("titulo", "").lower(),
+        )
 
 
 # -------------------------
@@ -211,6 +342,24 @@ def generar_tags(evento, tipo_evento):
     if "canal" in lugar:
         tags.add("teatros-del-canal")
 
+    if "alcázar" in lugar or "alcazar" in lugar:
+        tags.add("teatro-alcazar")
+
+    if "gran vía" in lugar or "gran via" in lugar:
+        tags.add("teatro-gran-via")
+
+    if "maravillas" in lugar:
+        tags.add("teatro-maravillas")
+
+    if "fígaro" in lugar or "figaro" in lugar:
+        tags.add("teatro-figaro")
+
+    if "capitol" in lugar:
+        tags.add("capitol-gran-via")
+
+    if "pequeño teatro gran vía" in lugar or "pequeno teatro gran via" in lugar:
+        tags.add("pequeno-teatro-gran-via")
+
     if any(p in titulo for p in ["flamenco"]):
         tags.add("flamenco")
 
@@ -236,7 +385,7 @@ def generar_tags(evento, tipo_evento):
 
 
 # -------------------------
-# METADATOS EXTRA CANAL
+# HELPERS FECHAS EXTRA
 # -------------------------
 
 def _lineas_limpias_html(html):
@@ -248,10 +397,13 @@ def _lineas_limpias_html(html):
     ]
 
 
+# -------------------------
+# METADATOS EXTRA CANAL
+# -------------------------
+
 def _parsear_linea_fechas_canal(linea):
     texto = limpiar_texto(linea).lower()
 
-    # Del 26 de marzo al 19 de abril de 2026
     m = re.search(
         r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
@@ -261,13 +413,12 @@ def _parsear_linea_fechas_canal(linea):
         fin = construir_fecha(int(m.group(3)), m.group(4), int(m.group(5)))
         if inicio and fin:
             return {
-                "rango_fechas": True,
+                "tipo_fecha": "rango",
                 "fecha_inicio": inicio.isoformat(),
                 "fecha_fin": fin.isoformat(),
                 "fechas_funcion": []
             }
 
-    # Del 19 de marzo al 8 de mayo
     m = re.search(
         r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+(\d{1,2})\s+de\s+([a-záéíóú]+)",
         texto
@@ -278,13 +429,12 @@ def _parsear_linea_fechas_canal(linea):
         fin = construir_fecha(int(m.group(3)), m.group(4), anio)
         if inicio and fin:
             return {
-                "rango_fechas": True,
+                "tipo_fecha": "rango",
                 "fecha_inicio": inicio.isoformat(),
                 "fecha_fin": fin.isoformat(),
                 "fechas_funcion": []
             }
 
-    # 10, 11 y 12 de abril de 2026
     m = re.search(
         r"(\d{1,2})\s*,\s*(\d{1,2})\s+y\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
@@ -298,13 +448,10 @@ def _parsear_linea_fechas_canal(linea):
         fechas = [f.isoformat() for f in fechas if f]
         if fechas:
             return {
-                "rango_fechas": False,
-                "fecha_inicio": fechas[0],
-                "fecha_fin": fechas[-1],
+                "tipo_fecha": "lista",
                 "fechas_funcion": fechas
             }
 
-    # 11 y 12 de abril de 2026
     m = re.search(
         r"(\d{1,2})\s+y\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
@@ -317,13 +464,10 @@ def _parsear_linea_fechas_canal(linea):
         fechas = [f.isoformat() for f in fechas if f]
         if fechas:
             return {
-                "rango_fechas": False,
-                "fecha_inicio": fechas[0],
-                "fecha_fin": fechas[-1],
+                "tipo_fecha": "lista",
                 "fechas_funcion": fechas
             }
 
-    # 12 de abril de 2026
     m = re.search(
         r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
@@ -331,12 +475,9 @@ def _parsear_linea_fechas_canal(linea):
     if m:
         f = construir_fecha(int(m.group(1)), m.group(2), int(m.group(3)))
         if f:
-            iso = f.isoformat()
             return {
-                "rango_fechas": False,
-                "fecha_inicio": iso,
-                "fecha_fin": iso,
-                "fechas_funcion": [iso]
+                "tipo_fecha": "unica",
+                "fecha": f.isoformat()
             }
 
     return None
@@ -353,7 +494,134 @@ def extraer_metadatos_canal(url_evento):
     for linea in lineas:
         datos = _parsear_linea_fechas_canal(linea)
         if datos:
-            return datos
+            return normalizar_info_fecha(datos) or {}
+
+    return {}
+
+
+# -------------------------
+# METADATOS EXTRA GRUPOSMEDIA
+# -------------------------
+
+def _parsear_linea_fechas_gruposmedia(linea):
+    texto = limpiar_texto(linea).lower()
+
+    m = re.search(
+        r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})\s+al\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        inicio = construir_fecha(int(m.group(1)), m.group(2), int(m.group(3)))
+        fin = construir_fecha(int(m.group(4)), m.group(5), int(m.group(6)))
+        if inicio and fin:
+            return {
+                "tipo_fecha": "rango",
+                "fecha_inicio": inicio.isoformat(),
+                "fecha_fin": fin.isoformat(),
+                "fechas_funcion": []
+            }
+
+    m = re.search(
+        r"del\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+al\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        inicio = construir_fecha(int(m.group(1)), m.group(2), int(m.group(5)))
+        fin = construir_fecha(int(m.group(3)), m.group(4), int(m.group(5)))
+        if inicio and fin:
+            return {
+                "tipo_fecha": "rango",
+                "fecha_inicio": inicio.isoformat(),
+                "fecha_fin": fin.isoformat(),
+                "fechas_funcion": []
+            }
+
+    m = re.search(
+        r"(\d{1,2})\s*,\s*(\d{1,2})\s+y\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        anio = int(m.group(5))
+        fechas = [
+            construir_fecha(int(m.group(1)), m.group(4), anio),
+            construir_fecha(int(m.group(2)), m.group(4), anio),
+            construir_fecha(int(m.group(3)), m.group(4), anio),
+        ]
+        fechas = [f.isoformat() for f in fechas if f]
+        if fechas:
+            return {
+                "tipo_fecha": "lista",
+                "fechas_funcion": fechas
+            }
+
+    m = re.search(
+        r"(\d{1,2})\s+y\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        anio = int(m.group(4))
+        fechas = [
+            construir_fecha(int(m.group(1)), m.group(3), anio),
+            construir_fecha(int(m.group(2)), m.group(3), anio),
+        ]
+        fechas = [f.isoformat() for f in fechas if f]
+        if fechas:
+            return {
+                "tipo_fecha": "lista",
+                "fechas_funcion": fechas
+            }
+
+    m = re.search(
+        r"hasta\s+el\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        fin = construir_fecha(int(m.group(1)), m.group(2), int(m.group(3)))
+        if fin:
+            return {
+                "tipo_fecha": "hasta",
+                "fecha_fin": fin.isoformat()
+            }
+
+    m = re.search(
+        r"desde\s+el\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        texto
+    )
+    if m:
+        inicio = construir_fecha(int(m.group(1)), m.group(2), int(m.group(3)))
+        if inicio:
+            return {
+                "tipo_fecha": "desde",
+                "fecha_inicio": inicio.isoformat()
+            }
+
+    return None
+
+
+def extraer_metadatos_gruposmedia(url_evento):
+    try:
+        r = get_url(url_evento, timeout=30)
+    except Exception:
+        return {}
+
+    lineas = _lineas_limpias_html(r.text)
+
+    for linea in lineas[:200]:
+        datos = _parsear_linea_fechas_gruposmedia(linea)
+        if datos:
+            return normalizar_info_fecha(datos) or {}
+
+    return {}
+
+
+def extraer_metadatos_fuente(url_evento):
+    url = (url_evento or "").lower()
+
+    if "teatroscanal.com/espectaculo/" in url:
+        return extraer_metadatos_canal(url_evento)
+
+    if "gruposmedia.com/cartelera/" in url:
+        return extraer_metadatos_gruposmedia(url_evento)
 
     return {}
 
@@ -374,9 +642,6 @@ def enriquecer_evento_nuevo(evento):
     evento["tipo_evento"] = tipo_evento
     evento["tags"] = tags
 
-    if "teatroscanal.com/espectaculo/" in evento.get("url_evento", ""):
-        evento.update(extraer_metadatos_canal(evento["url_evento"]))
-
     return evento
 
 
@@ -387,6 +652,19 @@ def actualizar_evento_existente(evento_master, evento_actual):
     evento_master["fecha"] = evento_actual.get("fecha", evento_master.get("fecha", ""))
     evento_master["lugar"] = evento_actual.get("lugar", evento_master.get("lugar", ""))
     evento_master["fuente"] = evento_actual.get("fuente", evento_master.get("fuente", ""))
+    evento_master["url_evento"] = evento_actual.get("url_evento", evento_master.get("url_evento", ""))
+
+    evento_master["tipo_fecha"] = evento_actual.get("tipo_fecha", evento_master.get("tipo_fecha", ""))
+    evento_master["rango_fechas"] = evento_actual.get("rango_fechas", evento_master.get("rango_fechas", False))
+    evento_master["fecha_inicio"] = evento_actual.get("fecha_inicio", evento_master.get("fecha_inicio"))
+    evento_master["fecha_fin"] = evento_actual.get("fecha_fin", evento_master.get("fecha_fin"))
+    evento_master["fechas_funcion"] = evento_actual.get("fechas_funcion", evento_master.get("fechas_funcion", []))
+    evento_master["dias_semana"] = evento_actual.get("dias_semana", evento_master.get("dias_semana", []))
+    evento_master["texto_fecha_original"] = evento_actual.get(
+        "texto_fecha_original",
+        evento_master.get("texto_fecha_original", "")
+    )
+
     evento_master["last_seen"] = ahora
     evento_master["estado"] = "activo"
     evento_master["enriched"] = True
@@ -395,14 +673,6 @@ def actualizar_evento_existente(evento_master, evento_actual):
         tipo_evento = clasificar_tipo_evento(evento_actual)
         evento_master["tipo_evento"] = tipo_evento
         evento_master["tags"] = generar_tags(evento_actual, tipo_evento)
-
-    if "teatroscanal.com/espectaculo/" in evento_master.get("url_evento", ""):
-        if (
-            "fechas_funcion" not in evento_master and
-            "fecha_inicio" not in evento_master and
-            "fecha_fin" not in evento_master
-        ):
-            evento_master.update(extraer_metadatos_canal(evento_master["url_evento"]))
 
     return evento_master
 
@@ -425,7 +695,7 @@ def reconciliar_master(eventos_json_actuales, master_anterior):
     for evento in eventos_json_actuales:
         clave = clave_evento_json(evento)
 
-        if not clave[0] or not clave[1]:
+        if not clave[0]:
             continue
 
         if clave in claves_actuales:
@@ -452,7 +722,11 @@ def reconciliar_master(eventos_json_actuales, master_anterior):
 
     master_actualizado = list(master_por_clave.values())
     master_actualizado.sort(
-        key=lambda e: (e.get("fecha", ""), e.get("lugar", ""), e.get("titulo", ""))
+        key=lambda e: (
+            e.get("fecha", "") or e.get("fecha_fin", "") or "",
+            e.get("lugar", ""),
+            e.get("titulo", ""),
+        )
     )
 
     return master_actualizado, nuevos, existentes, desaparecidos, duplicados_en_lote
@@ -491,6 +765,7 @@ def main():
     for funcion in fuentes:
         try:
             eventos = funcion()
+            eventos = limpiar_eventos(eventos)
             todos_los_eventos.extend(eventos)
             print(f"[OK] {funcion.__name__}: {len(eventos)} eventos")
         except Exception as e:

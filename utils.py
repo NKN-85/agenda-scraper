@@ -19,7 +19,6 @@ def get_url(url, headers=None, timeout=15, intentos=3, session=None, pausa_min=0
 
     for intento in range(intentos):
         try:
-            # pausa aleatoria antes de cada petición
             time.sleep(random.uniform(pausa_min, pausa_max))
 
             cliente = session or requests
@@ -38,7 +37,6 @@ def get_url(url, headers=None, timeout=15, intentos=3, session=None, pausa_min=0
             print(f"[HTTP] intento {intento + 1} fallido: {e}")
 
             if intento < intentos - 1:
-                # espera extra antes del reintento
                 time.sleep(random.uniform(1.5, 3.0))
 
     raise ultimo_error
@@ -61,7 +59,36 @@ def limpiar_texto(texto):
 def fecha_a_str(fecha):
     if not fecha:
         return ""
+    if isinstance(fecha, str):
+        try:
+            y, m, d = fecha.split("-")
+            return f"{d.zfill(2)}/{m.zfill(2)}/{y}"
+        except Exception:
+            return fecha
     return fecha.strftime("%d/%m/%Y")
+
+
+def fecha_a_iso(fecha):
+    if not fecha:
+        return None
+    if isinstance(fecha, str):
+        # acepta ya ISO o dd/mm/yyyy
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", fecha):
+            return fecha
+        if re.fullmatch(r"\d{2}/\d{2}/\d{4}", fecha):
+            d, m, y = fecha.split("/")
+            return f"{y}-{m}-{d}"
+        return None
+    return fecha.isoformat()
+
+
+def parse_fecha_iso(fecha_str):
+    if not fecha_str:
+        return None
+    try:
+        return datetime.strptime(fecha_str, "%Y-%m-%d").date()
+    except Exception:
+        return None
 
 
 def es_futura_o_hoy(fecha):
@@ -74,33 +101,12 @@ def es_futura_o_hoy(fecha):
 # CLAVE / DEDUPLICADO
 # -------------------------
 
-def clave_evento(titulo, fecha, lugar):
+def clave_evento(titulo, lugar, url_evento):
     return (
         limpiar_texto(titulo).lower(),
-        fecha,
-        limpiar_texto(lugar).lower()
+        limpiar_texto(lugar).lower(),
+        limpiar_texto(url_evento).strip().lower()
     )
-
-
-def agregar_evento(eventos, vistos, titulo, fecha_evento, lugar, url_evento, fuente):
-    if not titulo or not fecha_evento or not lugar or not url_evento:
-        return False
-
-    clave = clave_evento(titulo, fecha_evento, lugar)
-    if clave in vistos:
-        return False
-
-    vistos.add(clave)
-
-    eventos.append([
-        limpiar_texto(titulo),
-        fecha_a_str(fecha_evento),
-        limpiar_texto(lugar),
-        limpiar_texto(url_evento),
-        limpiar_texto(fuente),
-    ])
-
-    return True
 
 
 # -------------------------
@@ -108,6 +114,9 @@ def agregar_evento(eventos, vistos, titulo, fecha_evento, lugar, url_evento, fue
 # -------------------------
 
 def mes_es_a_numero(mes_txt):
+    if not mes_txt:
+        return None
+
     meses = {
         "ene": 1, "enero": 1,
         "feb": 2, "febrero": 2,
@@ -117,7 +126,7 @@ def mes_es_a_numero(mes_txt):
         "jun": 6, "junio": 6,
         "jul": 7, "julio": 7,
         "ago": 8, "agosto": 8,
-        "sep": 9, "septiembre": 9,
+        "sep": 9, "septiembre": 9, "set": 9, "setiembre": 9,
         "oct": 10, "octubre": 10,
         "nov": 11, "noviembre": 11,
         "dic": 12, "diciembre": 12,
@@ -140,7 +149,7 @@ def construir_fecha(dia, mes_txt, anio=None):
             anio = date.today().year
 
         return date(int(anio), mes, int(dia))
-    except:
+    except Exception:
         return None
 
 
@@ -154,12 +163,11 @@ def construir_fecha_actual(dia, mes_txt):
 
         anio = hoy.year
 
-        # si el mes ya pasó claramente → siguiente año
         if mes < hoy.month - 1:
             anio += 1
 
         return date(anio, mes, int(dia))
-    except:
+    except Exception:
         return None
 
 
@@ -179,7 +187,6 @@ def convertir_fecha_but(fecha_texto):
 
     fecha_texto = fecha_texto.strip().lower()
 
-    # 12-feb-26
     if "-" in fecha_texto:
         partes = fecha_texto.split("-")
         if len(partes) == 3:
@@ -189,7 +196,6 @@ def convertir_fecha_but(fecha_texto):
             if mes:
                 return date(anio, mes, dia)
 
-    # 12 FEB 2026
     partes = fecha_texto.split()
     if len(partes) == 3:
         dia = int(partes[0])
@@ -233,9 +239,7 @@ def convertir_fecha_vistalegre(fecha_texto):
 
     fecha_texto = fecha_texto.strip().lower()
 
-    # "20 marzo - 6:00 pm"
     partes = fecha_texto.split("-")[0].strip().split()
-
     if len(partes) >= 2:
         try:
             dia = int(partes[0])
@@ -246,10 +250,9 @@ def convertir_fecha_vistalegre(fecha_texto):
                 if mes < hoy.month - 1:
                     anio += 1
                 return date(anio, mes, dia)
-        except:
+        except Exception:
             pass
 
-    # "30-abr"
     if "-" in fecha_texto:
         partes = fecha_texto.split("-")
         if len(partes) == 2:
@@ -262,7 +265,302 @@ def convertir_fecha_vistalegre(fecha_texto):
                     if mes < hoy.month - 1:
                         anio += 1
                     return date(anio, mes, dia)
-            except:
+            except Exception:
                 pass
 
     return None
+
+
+# -------------------------
+# NORMALIZACIÓN DE FECHAS ENRIQUECIDAS
+# -------------------------
+
+def _normalizar_dias_semana(dias_semana):
+    if not dias_semana:
+        return []
+
+    resultado = []
+    for d in dias_semana:
+        if isinstance(d, int) and 0 <= d <= 6:
+            resultado.append(d)
+
+    return sorted(set(resultado))
+
+
+def _iso_min_no_pasada(fechas_iso):
+    """
+    Devuelve la primera fecha >= hoy.
+    Si todas están en el pasado, devuelve la primera igualmente.
+    """
+    if not fechas_iso:
+        return None
+
+    hoy = date.today()
+    fechas_date = []
+
+    for f in fechas_iso:
+        fd = parse_fecha_iso(f)
+        if fd:
+            fechas_date.append(fd)
+
+    if not fechas_date:
+        return fechas_iso[0]
+
+    futuras = sorted([f for f in fechas_date if f >= hoy])
+    if futuras:
+        return futuras[0].isoformat()
+
+    return min(fechas_date).isoformat()
+
+
+def normalizar_info_fecha(info_fecha=None, fecha_evento=None):
+    """
+    Estandariza cualquier formato interno a este contrato:
+
+    {
+        "tipo_fecha": "unica|lista|rango|hasta|desde|patron",
+        "fecha": "YYYY-MM-DD",
+        "rango_fechas": bool,
+        "fecha_inicio": "YYYY-MM-DD"|None,
+        "fecha_fin": "YYYY-MM-DD"|None,
+        "fechas_funcion": [],
+        "dias_semana": [],
+        "texto_fecha_original": ""
+    }
+    """
+    if not info_fecha and fecha_evento:
+        iso = fecha_a_iso(fecha_evento)
+        if not iso:
+            return None
+
+        return {
+            "tipo_fecha": "unica",
+            "fecha": iso,
+            "rango_fechas": False,
+            "fecha_inicio": iso,
+            "fecha_fin": iso,
+            "fechas_funcion": [iso],
+            "dias_semana": [],
+            "texto_fecha_original": ""
+        }
+
+    if not info_fecha:
+        return None
+
+    tipo = (info_fecha.get("tipo_fecha") or info_fecha.get("tipo") or "").strip().lower()
+    texto_original = limpiar_texto(info_fecha.get("texto_fecha_original", ""))
+
+    # 1) FECHA ÚNICA
+    if tipo in {"unica", "simple"}:
+        f = info_fecha.get("fecha") or fecha_evento
+        iso = fecha_a_iso(f)
+        if not iso:
+            return None
+
+        return {
+            "tipo_fecha": "unica",
+            "fecha": iso,
+            "rango_fechas": False,
+            "fecha_inicio": iso,
+            "fecha_fin": iso,
+            "fechas_funcion": [iso],
+            "dias_semana": [],
+            "texto_fecha_original": texto_original
+        }
+
+    # 2) LISTA DE FECHAS
+    if tipo == "lista":
+        fechas_raw = info_fecha.get("fechas") or info_fecha.get("fechas_funcion") or []
+        fechas_iso = [fecha_a_iso(f) for f in fechas_raw if fecha_a_iso(f)]
+        fechas_iso = sorted(set(fechas_iso))
+
+        if not fechas_iso:
+            return None
+
+        fecha_repr = _iso_min_no_pasada(fechas_iso)
+
+        return {
+            "tipo_fecha": "lista",
+            "fecha": fecha_repr,
+            "rango_fechas": False,
+            "fecha_inicio": fechas_iso[0],
+            "fecha_fin": fechas_iso[-1],
+            "fechas_funcion": fechas_iso,
+            "dias_semana": [],
+            "texto_fecha_original": texto_original
+        }
+
+    # 3) RANGO NORMAL
+    if tipo == "rango":
+        inicio = fecha_a_iso(info_fecha.get("fecha_inicio"))
+        fin = fecha_a_iso(info_fecha.get("fecha_fin"))
+
+        if not inicio and not fin:
+            return None
+
+        return {
+            "tipo_fecha": "rango",
+            "fecha": inicio or fin,
+            "rango_fechas": True,
+            "fecha_inicio": inicio,
+            "fecha_fin": fin,
+            "fechas_funcion": [],
+            "dias_semana": [],
+            "texto_fecha_original": texto_original
+        }
+
+    # 4) HASTA
+    if tipo in {"hasta", "rango_abierto"}:
+        inicio = fecha_a_iso(info_fecha.get("fecha_inicio"))
+        fin = fecha_a_iso(info_fecha.get("fecha_fin")) or fecha_a_iso(info_fecha.get("fecha"))
+
+        if not fin and not inicio:
+            return None
+
+        return {
+            "tipo_fecha": "hasta",
+            "fecha": inicio or fin,
+            "rango_fechas": True,
+            "fecha_inicio": inicio,
+            "fecha_fin": fin,
+            "fechas_funcion": [],
+            "dias_semana": [],
+            "texto_fecha_original": texto_original
+        }
+
+    # 5) DESDE
+    if tipo == "desde":
+        inicio = fecha_a_iso(info_fecha.get("fecha_inicio")) or fecha_a_iso(info_fecha.get("fecha"))
+
+        if not inicio:
+            return None
+
+        return {
+            "tipo_fecha": "desde",
+            "fecha": inicio,
+            "rango_fechas": True,
+            "fecha_inicio": inicio,
+            "fecha_fin": None,
+            "fechas_funcion": [],
+            "dias_semana": [],
+            "texto_fecha_original": texto_original
+        }
+
+    # 6) PATRÓN SEMANAL
+    if tipo == "patron":
+        inicio = fecha_a_iso(info_fecha.get("fecha_inicio"))
+        fin = fecha_a_iso(info_fecha.get("fecha_fin"))
+        dias_semana = _normalizar_dias_semana(info_fecha.get("dias_semana", []))
+
+        if not fin and not inicio:
+            return None
+
+        return {
+            "tipo_fecha": "patron",
+            "fecha": inicio or fin,
+            "rango_fechas": True,
+            "fecha_inicio": inicio,
+            "fecha_fin": fin,
+            "fechas_funcion": [],
+            "dias_semana": dias_semana,
+            "texto_fecha_original": texto_original
+        }
+
+    # 7) FALLBACK PARA ESTRUCTURAS YA SEMIRICAS
+    fechas_funcion = [fecha_a_iso(f) for f in (info_fecha.get("fechas_funcion") or []) if fecha_a_iso(f)]
+    fechas_funcion = sorted(set(fechas_funcion))
+    inicio = fecha_a_iso(info_fecha.get("fecha_inicio"))
+    fin = fecha_a_iso(info_fecha.get("fecha_fin"))
+    dias_semana = _normalizar_dias_semana(info_fecha.get("dias_semana", []))
+    rango_fechas = bool(info_fecha.get("rango_fechas"))
+
+    if dias_semana and (inicio or fin):
+        return {
+            "tipo_fecha": "patron",
+            "fecha": inicio or fin,
+            "rango_fechas": True,
+            "fecha_inicio": inicio,
+            "fecha_fin": fin,
+            "fechas_funcion": [],
+            "dias_semana": dias_semana,
+            "texto_fecha_original": texto_original
+        }
+
+    if fechas_funcion:
+        fecha_repr = _iso_min_no_pasada(fechas_funcion)
+        return {
+            "tipo_fecha": "lista",
+            "fecha": fecha_repr,
+            "rango_fechas": False,
+            "fecha_inicio": inicio or fechas_funcion[0],
+            "fecha_fin": fin or fechas_funcion[-1],
+            "fechas_funcion": fechas_funcion,
+            "dias_semana": [],
+            "texto_fecha_original": texto_original
+        }
+
+    if rango_fechas or inicio or fin:
+        return {
+            "tipo_fecha": "rango",
+            "fecha": fecha_a_iso(info_fecha.get("fecha")) or inicio or fin,
+            "rango_fechas": True,
+            "fecha_inicio": inicio,
+            "fecha_fin": fin,
+            "fechas_funcion": [],
+            "dias_semana": [],
+            "texto_fecha_original": texto_original
+        }
+
+    fecha_simple = fecha_a_iso(info_fecha.get("fecha")) or fecha_a_iso(fecha_evento)
+    if fecha_simple:
+        return {
+            "tipo_fecha": "unica",
+            "fecha": fecha_simple,
+            "rango_fechas": False,
+            "fecha_inicio": fecha_simple,
+            "fecha_fin": fecha_simple,
+            "fechas_funcion": [fecha_simple],
+            "dias_semana": [],
+            "texto_fecha_original": texto_original
+        }
+
+    return None
+
+
+# -------------------------
+# AGREGAR EVENTO ENRIQUECIDO
+# -------------------------
+
+def agregar_evento(eventos, vistos, titulo, fecha_evento, lugar, url_evento, fuente, info_fecha=None):
+    if not titulo or not lugar or not url_evento:
+        return False
+
+    clave = clave_evento(titulo, lugar, url_evento)
+    if clave in vistos:
+        return False
+
+    datos_fecha = normalizar_info_fecha(info_fecha=info_fecha, fecha_evento=fecha_evento)
+    if not datos_fecha:
+        return False
+
+    if not datos_fecha.get("fecha") and not datos_fecha.get("fecha_fin"):
+        return False
+
+    vistos.add(clave)
+
+    eventos.append({
+        "titulo": limpiar_texto(titulo),
+        "fecha": datos_fecha.get("fecha"),
+        "lugar": limpiar_texto(lugar),
+        "url_evento": limpiar_texto(url_evento),
+        "fuente": limpiar_texto(fuente),
+        "tipo_fecha": datos_fecha.get("tipo_fecha"),
+        "rango_fechas": datos_fecha.get("rango_fechas", False),
+        "fecha_inicio": datos_fecha.get("fecha_inicio"),
+        "fecha_fin": datos_fecha.get("fecha_fin"),
+        "fechas_funcion": datos_fecha.get("fechas_funcion", []),
+        "dias_semana": datos_fecha.get("dias_semana", []),
+        "texto_fecha_original": datos_fecha.get("texto_fecha_original", ""),
+    })
+
+    return True

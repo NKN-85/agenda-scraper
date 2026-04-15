@@ -88,10 +88,12 @@ def parsear_metadatos_fechas_canal(texto):
         fin = construir_fecha(int(m.group(3)), m.group(4), int(m.group(5)))
         if inicio and fin:
             return {
-                "rango_fechas": True,
+                "tipo": "rango",
+                "fecha": inicio,
                 "fecha_inicio": inicio,
                 "fecha_fin": fin,
-                "fechas_funcion": []
+                "fechas_funcion": [],
+                "texto_fecha_original": texto,
             }
 
     # Del 19 de marzo al 8 de mayo
@@ -105,10 +107,12 @@ def parsear_metadatos_fechas_canal(texto):
         fin = construir_fecha(int(m.group(3)), m.group(4), anio)
         if inicio and fin:
             return {
-                "rango_fechas": True,
+                "tipo": "rango",
+                "fecha": inicio,
                 "fecha_inicio": inicio,
                 "fecha_fin": fin,
-                "fechas_funcion": []
+                "fechas_funcion": [],
+                "texto_fecha_original": texto,
             }
 
     # 10, 11 y 12 de abril de 2026
@@ -125,10 +129,12 @@ def parsear_metadatos_fechas_canal(texto):
         fechas = [f for f in fechas if f]
         if fechas:
             return {
-                "rango_fechas": False,
+                "tipo": "lista",
+                "fecha": fechas[0],
                 "fecha_inicio": fechas[0],
                 "fecha_fin": fechas[-1],
-                "fechas_funcion": fechas
+                "fechas_funcion": fechas,
+                "texto_fecha_original": texto,
             }
 
     # 11 y 12 de abril de 2026
@@ -144,10 +150,12 @@ def parsear_metadatos_fechas_canal(texto):
         fechas = [f for f in fechas if f]
         if fechas:
             return {
-                "rango_fechas": False,
+                "tipo": "lista",
+                "fecha": fechas[0],
                 "fecha_inicio": fechas[0],
                 "fecha_fin": fechas[-1],
-                "fechas_funcion": fechas
+                "fechas_funcion": fechas,
+                "texto_fecha_original": texto,
             }
 
     # 12 de abril de 2026
@@ -159,10 +167,12 @@ def parsear_metadatos_fechas_canal(texto):
         f = construir_fecha(int(m.group(1)), m.group(2), int(m.group(3)))
         if f:
             return {
-                "rango_fechas": False,
+                "tipo": "unica",
+                "fecha": f,
                 "fecha_inicio": f,
                 "fecha_fin": f,
-                "fechas_funcion": [f]
+                "fechas_funcion": [f],
+                "texto_fecha_original": texto,
             }
 
     return None
@@ -177,15 +187,19 @@ def ficha_canal_sigue_vigente(soup):
         if not datos:
             continue
 
-        if datos["rango_fechas"]:
+        if datos["tipo"] == "rango":
             return datos["fecha_fin"] >= hoy
 
-        return any(f >= hoy for f in datos["fechas_funcion"])
+        if datos["tipo"] == "lista":
+            return any(f >= hoy for f in datos["fechas_funcion"])
+
+        if datos["tipo"] == "unica":
+            return datos["fecha"] >= hoy
 
     return False
 
 
-def extraer_titulo_y_primera_fecha_desde_ficha(soup):
+def extraer_titulo_y_metadatos_desde_ficha(soup):
     lineas = lineas_limpias(soup)
 
     descartes = {
@@ -206,8 +220,8 @@ def extraer_titulo_y_primera_fecha_desde_ficha(soup):
     }
 
     for i, linea in enumerate(lineas):
-        fecha = primera_fecha_canal(linea)
-        if not fecha:
+        datos_fecha = parsear_metadatos_fechas_canal(linea)
+        if not datos_fecha:
             continue
 
         j = i - 1
@@ -227,7 +241,7 @@ def extraer_titulo_y_primera_fecha_desde_ficha(soup):
                 j -= 1
                 continue
 
-            return candidata, fecha
+            return candidata, datos_fecha
 
         break
 
@@ -271,9 +285,9 @@ def sacar_canal():
             continue
 
         soup_det = BeautifulSoup(r_det.text, "html.parser")
-        titulo, fecha_evento = extraer_titulo_y_primera_fecha_desde_ficha(soup_det)
+        titulo, datos_fecha = extraer_titulo_y_metadatos_desde_ficha(soup_det)
 
-        if not titulo or not fecha_evento:
+        if not titulo or not datos_fecha:
             continue
 
         if not ficha_canal_sigue_vigente(soup_det):
@@ -283,21 +297,17 @@ def sacar_canal():
             eventos,
             vistos,
             titulo,
-            fecha_evento,
+            datos_fecha.get("fecha"),
             lugar,
             href,
-            url
+            url,
+            info_fecha=datos_fecha
         )
 
-    def _parse_fecha(fila):
-        try:
-            return date(
-                int(fila[1][6:10]),
-                int(fila[1][3:5]),
-                int(fila[1][0:2]),
-            )
-        except Exception:
-            return date.max
-
-    eventos.sort(key=lambda fila: (_parse_fecha(fila), fila[0].lower()))
+    eventos.sort(
+        key=lambda e: (
+            e.get("fecha") or "9999-12-31",
+            e.get("titulo", "").lower()
+        )
+    )
     return eventos

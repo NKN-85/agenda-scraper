@@ -1,15 +1,14 @@
-import requests
 import re
 from datetime import date
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
-from utils import HEADERS, agregar_evento, get_url
+from utils import agregar_evento, get_url
 
 
 def limpiar_texto(texto):
-    return " ".join(texto.split()).strip()
+    return " ".join((texto or "").split()).strip()
 
 
 def convertir_fecha_aranjuez(texto):
@@ -31,9 +30,9 @@ def convertir_fecha_aranjuez(texto):
     texto = limpiar_texto(texto).lower()
     anio_actual = date.today().year
 
-    # Caso completo
+    # lunes 14 de abril de 2026
     m = re.search(
-        r"(?:lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
+        r"(?:lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo)\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})",
         texto
     )
     if m:
@@ -41,34 +40,58 @@ def convertir_fecha_aranjuez(texto):
         mes = meses.get(m.group(2))
         anio = int(m.group(3))
         if mes:
-            return date(anio, mes, dia)
+            try:
+                return date(anio, mes, dia)
+            except ValueError:
+                return None
 
-    # Caso truncado
+    # lunes 14 de abril de 20... / 202...
     m = re.search(
-        r"(?:lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+20(?:\d{0,2}|\.{3})",
+        r"(?:lunes|martes|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo)\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+20(?:\d{0,2}|\.{3})",
         texto
     )
     if m:
         dia = int(m.group(1))
         mes = meses.get(m.group(2))
         if mes:
-            return date(anio_actual, mes, dia)
+            try:
+                return date(anio_actual, mes, dia)
+            except ValueError:
+                return None
 
-    # Respaldo
+    # 14 de abril de 2026
     m = re.search(r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})", texto)
     if m:
         dia = int(m.group(1))
         mes = meses.get(m.group(2))
         anio = int(m.group(3))
         if mes:
-            return date(anio, mes, dia)
+            try:
+                return date(anio, mes, dia)
+            except ValueError:
+                return None
 
+    # 14 de abril de 20... / 202...
     m = re.search(r"(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+20(?:\d{0,2}|\.{3})", texto)
     if m:
         dia = int(m.group(1))
         mes = meses.get(m.group(2))
         if mes:
-            return date(anio_actual, mes, dia)
+            try:
+                return date(anio_actual, mes, dia)
+            except ValueError:
+                return None
+
+    # Respaldo por si el año no aparece
+    m = re.search(r"(\d{1,2})\s+de\s+([a-záéíóú]+)", texto)
+    if m:
+        dia = int(m.group(1))
+        mes = meses.get(m.group(2))
+        if mes:
+            try:
+                return date(anio_actual, mes, dia)
+            except ValueError:
+                return None
 
     return None
 
@@ -80,9 +103,7 @@ def sacar_aranjuez():
     eventos = []
     vistos = set()
 
-    # 🔥 CAMBIO AQUÍ
     respuesta = get_url(url, timeout=20)
-
     soup = BeautifulSoup(respuesta.text, "html.parser")
 
     bloques = soup.select("li.eg-cartelera-wrapper")

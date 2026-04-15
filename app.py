@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Response
-import json
+import requests
 import unicodedata
 from datetime import date, timedelta, datetime
 
 app = FastAPI(
     title="API Agenda Cultural",
-    description="API local para consultar eventos de agenda cultural",
+    description="API para consultar eventos de agenda cultural",
     version="2.0.0"
 )
 
@@ -15,9 +15,13 @@ def favicon():
     return Response(status_code=204)
 
 
+URL_JSON = "https://raw.githubusercontent.com/NKN-85/agenda-scraper/refs/heads/main/eventos_master.json"
+
+
 def cargar_eventos():
-    with open("eventos_master.json", encoding="utf-8") as f:
-        return json.load(f)
+    response = requests.get(URL_JSON, timeout=20)
+    response.raise_for_status()
+    return response.json()
 
 
 def normalizar_texto(texto):
@@ -267,6 +271,11 @@ def filtrar_eventos(eventos, fecha_inicio=None, fecha_fin=None, sala=None):
         resultado.append(evento)
 
     return resultado
+
+
+@app.get("/")
+def root():
+    return {"ok": True, "servicio": "API Agenda Cultural"}
 
 
 @app.get("/eventos")

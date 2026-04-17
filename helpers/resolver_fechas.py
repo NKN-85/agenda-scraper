@@ -355,6 +355,68 @@ def filtrar_por_dia_semana(fechas, textos):
     return sorted(f for f in fechas if f.weekday() == dia)
 
 
+def es_linea_exclusion_funciones(texto):
+    t = normalizar_texto_fecha(texto)
+    patrones = [
+        r"\bno\s+hay\s+funcion(?:es)?\b",
+        r"\bsin\s+funcion(?:es)?\b",
+        r"\bexcepto\b",
+        r"\bmenos\b",
+    ]
+    return any(re.search(p, t) for p in patrones)
+
+
+def extraer_fechas_de_lineas_funciones(textos):
+    fechas = set()
+
+    for texto in textos:
+        t = normalizar_texto_fecha(texto)
+
+        if es_linea_exclusion_funciones(t):
+            continue
+
+        if "funciones:" in t or "funcion:" in t:
+            for f in extraer_fechas_explicitas(texto):
+                fechas.add(f)
+
+    return sorted(fechas)
+
+
+def extraer_fechas_exclusion(textos, anio_defecto=None):
+    fechas = set()
+    contextos = extraer_contexto_mes_anio(textos)
+
+    for idx, texto in enumerate(textos):
+        t = normalizar_texto_fecha(texto)
+        if not es_linea_exclusion_funciones(t):
+            continue
+
+        mes_ctx, anio_ctx = contextos[idx]
+        anio = anio_ctx or anio_defecto
+        if not anio:
+            continue
+
+        for f in extraer_fechas_explicitas(texto):
+            fechas.add(f)
+
+        m = re.search(
+            r"(?:no\s+hay\s+funcion(?:es)?|sin\s+funcion(?:es)?)(?::)?\s*(.+)",
+            t
+        )
+        if not m:
+            continue
+
+        resto = m.group(1)
+
+        if mes_ctx:
+            for dia in extraer_dias_sueltos_de_linea(resto):
+                f = construir_fecha_segura(dia, mes_ctx, anio)
+                if f:
+                    fechas.add(f)
+
+    return sorted(fechas)
+
+
 def resolver_info_fecha_de_textos(textos, titulo_evento=None):
     if not textos:
         return None
@@ -369,6 +431,12 @@ def resolver_info_fecha_de_textos(textos, titulo_evento=None):
     fechas_explicitas = set()
     hay_alternos = False
 
+    fechas_linea_funciones = extraer_fechas_de_lineas_funciones(textos)
+    if fechas_linea_funciones:
+        if len(fechas_linea_funciones) >= 2:
+            return info_lista(fechas_linea_funciones, "funciones")
+        return info_unica(fechas_linea_funciones[0], "funciones")
+
     for texto in textos:
         if contiene_patron_alterno(texto):
             hay_alternos = True
@@ -379,6 +447,9 @@ def resolver_info_fecha_de_textos(textos, titulo_evento=None):
 
         if info and info.get("tipo") in {"rango", "hasta", "desde"} and es_mejor_info_fecha(info, mejor_limites):
             mejor_limites = info
+
+        if es_linea_exclusion_funciones(texto):
+            continue
 
         fechas_explicitas.update(extraer_fechas_explicitas(texto))
 
@@ -402,8 +473,6 @@ def resolver_info_fecha_de_textos(textos, titulo_evento=None):
             fecha_fin=fecha_fin,
         )
 
-        # Si el calendario ya nos da fechas concretas del evento,
-        # NO aplicamos alternancia sintética. Solo filtramos por día.
         if fechas_titulo:
             fechas = filtrar_por_dia_semana(fechas_titulo, textos)
 
@@ -412,7 +481,6 @@ def resolver_info_fecha_de_textos(textos, titulo_evento=None):
             if len(fechas) == 1:
                 return info_unica(fechas[0], "alternos")
 
-        # Fallback global solo si no se pudo asociar por título.
         fechas_globales = extraer_fechas_desde_calendario_global(
             textos=textos,
             fecha_inicio=fecha_inicio,
@@ -443,8 +511,54 @@ def resolver_info_fecha_de_textos(textos, titulo_evento=None):
         if todas:
             return info_lista(sorted(todas), "mixto")
 
+    if mejor_patron and not fecha_inicio and fecha_fin:
+        fecha_inicio_sintetica = date.today()
+
+        fechas_patron = expandir_patron_a_fechas(
+            fecha_inicio=fecha_inicio_sintetica,
+            fecha_fin=fecha_fin,
+            dias_semana=mejor_patron.get("dias_semana") or [],
+        )
+
+        fechas_exclusion = set(
+            extraer_fechas_exclusion(
+                textos=textos,
+                anio_defecto=fecha_fin.year if fecha_fin else None,
+            )
+        )
+
+        fechas_finales = sorted(f for f in fechas_patron if f not in fechas_exclusion)
+
+        if len(fechas_finales) >= 2:
+            return info_lista(fechas_finales, "patron_hasta")
+        if len(fechas_finales) == 1:
+            return info_unica(fechas_finales[0], "patron_hasta")
+
     if len(fechas_explicitas) >= 2:
         return info_lista(sorted(fechas_explicitas), "lista")
+
+    if mejor_limites and mejor_limites.get("tipo") == "hasta":
+        if mejor_patron:
+            fecha_inicio_sintetica = date.today()
+            fechas_patron = expandir_patron_a_fechas(
+                fecha_inicio=fecha_inicio_sintetica,
+                fecha_fin=fecha_fin,
+                dias_semana=mejor_patron.get("dias_semana") or [],
+            )
+            fechas_exclusion = set(
+                extraer_fechas_exclusion(
+                    textos=textos,
+                    anio_defecto=fecha_fin.year if fecha_fin else None,
+                )
+            )
+            fechas_finales = sorted(f for f in fechas_patron if f not in fechas_exclusion)
+
+            if len(fechas_finales) >= 2:
+                return info_lista(fechas_finales, "patron_hasta")
+            if len(fechas_finales) == 1:
+                return info_unica(fechas_finales[0], "patron_hasta")
+
+        return mejor_limites
 
     if mejor_patron and es_mejor_info_fecha(mejor_patron, mejor):
         return mejor_patron

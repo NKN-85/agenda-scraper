@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Response
 import requests
 import unicodedata
+import os
+import json
 from datetime import date, timedelta, datetime
 
 app = FastAPI(
@@ -16,9 +18,14 @@ def favicon():
 
 
 URL_JSON = "https://raw.githubusercontent.com/NKN-85/agenda-scraper/refs/heads/main/eventos_master.json"
+ENV = os.getenv("ENV", "local")
 
 
 def cargar_eventos():
+    if ENV == "local":
+        with open("eventos_master.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+
     response = requests.get(URL_JSON, timeout=20)
     response.raise_for_status()
     return response.json()

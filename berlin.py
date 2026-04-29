@@ -1,28 +1,17 @@
-import requests
+from collections import defaultdict
 import re
 from datetime import date
 from urllib.parse import urljoin
-
 from bs4 import BeautifulSoup
 
-from utils import HEADERS, agregar_evento, get_url
+from utils import agregar_evento, get_url
 from helpers.texto import normalizar_texto
 
 
 def convertir_fecha_berlin(dia_texto, mes_texto, anio):
     meses = {
-        "ene": 1,
-        "feb": 2,
-        "mar": 3,
-        "abr": 4,
-        "may": 5,
-        "jun": 6,
-        "jul": 7,
-        "ago": 8,
-        "sep": 9,
-        "oct": 10,
-        "nov": 11,
-        "dic": 12,
+        "ene": 1, "feb": 2, "mar": 3, "abr": 4, "may": 5, "jun": 6,
+        "jul": 7, "ago": 8, "sep": 9, "oct": 10, "nov": 11, "dic": 12,
     }
 
     dia_texto = dia_texto.strip()
@@ -48,14 +37,10 @@ def sacar_berlin():
     eventos = []
     vistos = set()
 
-    # 🔥 CAMBIO AQUÍ
     respuesta = get_url(url, timeout=20)
-
     soup = BeautifulSoup(respuesta.text, "html.parser")
-
     lineas = [l.strip() for l in soup.get_text("\n", strip=True).splitlines() if l.strip()]
 
-    # Títulos válidos sacados de anchors internos de programa
     titulos_validos = {}
     for a in soup.find_all("a", href=True):
         texto = a.get_text(" ", strip=True)
@@ -70,8 +55,7 @@ def sacar_berlin():
             continue
 
         texto_norm = normalizar_texto(texto)
-
-        if texto_norm in {"read more", "<< todo el programa"}:
+        if texto_norm in {"read more", "<< todo el programa", "leer mas", "leer más"}:
             continue
 
         if 3 <= len(texto) <= 180:
@@ -94,7 +78,6 @@ def sacar_berlin():
         dia = None
         mes_txt = None
 
-        # Miramos hacia arriba
         inicio = max(0, i - 6)
         ventana = lineas[inicio:i]
 
@@ -119,38 +102,47 @@ def sacar_berlin():
         if not mes_num:
             continue
 
-        # Inferencia de año
         if mes_num < mes_anterior - 6:
             anio_actual += 1
         mes_anterior = mes_num
 
         fecha_evento = convertir_fecha_berlin(dia, mes_txt, anio_actual)
-        if not fecha_evento:
-            continue
-
-        if fecha_evento < hoy:
+        if not fecha_evento or fecha_evento < hoy:
             continue
 
         candidatos.append((titulo, fecha_evento, url_evento))
 
-    # Dedupe por URL
-    candidatos_unicos = []
-    urls_vistas = set()
-    for titulo, fecha_evento, url_evento in candidatos:
-        if url_evento in urls_vistas:
-            continue
-        urls_vistas.add(url_evento)
-        candidatos_unicos.append((titulo, fecha_evento, url_evento))
+    # Agrupar todas las fechas por evento
+    agrupados = defaultdict(set)
 
-    for titulo, fecha_evento, url_evento in candidatos_unicos:
+    for titulo, fecha_evento, url_evento in candidatos:
+        clave = (titulo.strip(), url_evento.strip())
+        agrupados[clave].add(fecha_evento)
+
+    for (titulo, url_evento), fechas in agrupados.items():
+        fechas_ordenadas = sorted(fechas)
+
+        if not fechas_ordenadas:
+            continue
+
+        info_fecha = {
+            "tipo_fecha": "lista" if len(fechas_ordenadas) > 1 else "unica",
+            "fechas_funcion": [f.isoformat() for f in fechas_ordenadas],
+            "fecha": fechas_ordenadas[0].isoformat(),
+            "fecha_inicio": fechas_ordenadas[0].isoformat(),
+            "fecha_fin": fechas_ordenadas[-1].isoformat(),
+            "texto_fecha_original": "programa berlin"
+        }
+
         agregar_evento(
-            eventos,
-            vistos,
-            titulo,
-            fecha_evento,
-            lugar,
-            url_evento,
-            url
+            eventos=eventos,
+            vistos=vistos,
+            titulo=titulo,
+            fecha_evento=fechas_ordenadas[0],
+            lugar=lugar,
+            url_evento=url_evento,
+            fuente=url,
+            info_fecha=info_fecha,
         )
 
     return eventos

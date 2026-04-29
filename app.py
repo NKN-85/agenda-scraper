@@ -3,12 +3,13 @@ import requests
 import unicodedata
 import os
 import json
+import re
 from datetime import date, timedelta, datetime
 
 app = FastAPI(
     title="API Agenda Cultural",
     description="API para consultar eventos de agenda cultural",
-    version="2.0.0"
+    version="2.2.0"
 )
 
 
@@ -35,10 +36,26 @@ def normalizar_texto(texto):
     if not texto:
         return ""
 
-    texto = texto.strip().lower()
+    texto = str(texto).strip().lower()
     texto = unicodedata.normalize("NFD", texto)
     texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
+
+    texto = re.sub(r"[^a-z0-9]+", " ", texto)
+    texto = re.sub(r"\s+", " ", texto).strip()
+
     return texto
+
+
+def texto_contiene_variante(texto_norm, variante):
+    if not texto_norm or not variante:
+        return False
+
+    variante_norm = normalizar_texto(variante)
+    if not variante_norm:
+        return False
+
+    patron = rf"(?<![a-z0-9]){re.escape(variante_norm)}(?![a-z0-9])"
+    return re.search(patron, texto_norm) is not None
 
 
 def parse_fecha_iso(fecha_str):
@@ -83,11 +100,9 @@ def coincide_fechas(evento, fecha_inicio, fecha_fin):
     fechas = evento.get("fechas_funcion", []) or []
     dias_semana = evento.get("dias_semana", []) or []
 
-    # 1) patrón semanal
     if dias_semana:
         return expandir_patron_en_rango(evento, fecha_inicio, fecha_fin)
 
-    # 2) lista de fechas
     if fechas:
         for f in fechas:
             fecha = parse_fecha_iso(f)
@@ -95,23 +110,18 @@ def coincide_fechas(evento, fecha_inicio, fecha_fin):
                 return True
         return False
 
-    # 3) rango
     if tipo_fecha == "rango":
         return bool(inicio and fin and not (fin < fecha_inicio or inicio > fecha_fin))
 
-    # 4) hasta
     if tipo_fecha == "hasta":
         return bool(fin and fin >= fecha_inicio)
 
-    # 5) desde
     if tipo_fecha == "desde":
         return bool(inicio and inicio <= fecha_fin)
 
-    # 6) fecha única
     if fecha_simple:
         return fecha_inicio <= fecha_simple <= fecha_fin
 
-    # 7) fallback estructural por si faltó tipo_fecha
     if inicio and fin:
         return not (fin < fecha_inicio or inicio > fecha_fin)
 
@@ -124,76 +134,399 @@ def coincide_fechas(evento, fecha_inicio, fecha_fin):
     return False
 
 
+SALA_ALIAS = {
+    "alcazar": "teatro alcazar",
+    "teatro alcazar": "teatro alcazar",
+
+    "gran via": "teatro gran via",
+    "granvia": "teatro gran via",
+    "teatro gran via": "teatro gran via",
+    "teatro granvia": "teatro gran via",
+
+    "capitol": "capitol gran via",
+    "capitol gran via": "capitol gran via",
+
+    "pequeno gran via": "pequeno teatro gran via",
+    "pequeno teatro gran via": "pequeno teatro gran via",
+    "pequeño gran via": "pequeno teatro gran via",
+    "pequeño teatro gran via": "pequeno teatro gran via",
+    "pequenogranvia": "pequeno teatro gran via",
+    "pequeñogranvia": "pequeno teatro gran via",
+
+    "figaro": "teatro figaro",
+    "teatro figaro": "teatro figaro",
+
+    "maravillas": "teatro maravillas",
+    "teatro maravillas": "teatro maravillas",
+
+    "canal": "teatros del canal",
+    "teatros del canal": "teatros del canal",
+
+    "eslava": "teatro eslava",
+    "teatro eslava": "teatro eslava",
+
+    "but": "sala but",
+    "sala but": "sala but",
+
+    "elsol": "sala el sol",
+    "el sol": "sala el sol",
+    "sala el sol": "sala el sol",
+
+    "riviera": "sala la riviera",
+    "la riviera": "sala la riviera",
+    "sala la riviera": "sala la riviera",
+
+    "berlin": "cafe berlin",
+    "cafe berlin": "cafe berlin",
+    "café berlin": "cafe berlin",
+
+    "movistar": "movistar arena",
+    "movistar arena": "movistar arena",
+    "movistararena": "movistar arena",
+
+    "auditorio": "auditorio nacional",
+    "inaem": "auditorio nacional",
+    "auditorio nacional": "auditorio nacional",
+    "auditorio nacional de musica": "auditorio nacional",
+    "auditorionacional": "auditorio nacional",
+
+    "aranjuez": "teatro real carlos iii de aranjuez",
+    "teatro aranjuez": "teatro real carlos iii de aranjuez",
+    "teatro real carlos iii": "teatro real carlos iii de aranjuez",
+    "teatro real carlos iii de aranjuez": "teatro real carlos iii de aranjuez",
+
+    "matadero": "matadero madrid",
+    "matadero madrid": "matadero madrid",
+
+    "vistalegre": "palacio vistalegre",
+    "palacio vistalegre": "palacio vistalegre",
+    "vistalegre arena": "palacio vistalegre",
+
+    "fernan": "teatro fernan gomez",
+    "fernan gomez": "teatro fernan gomez",
+    "fernangomez": "teatro fernan gomez",
+    "teatro fernan gomez": "teatro fernan gomez",
+    "teatro fernán gómez": "teatro fernan gomez",
+    "teatrofernangomez": "teatro fernan gomez",
+    "teatro fernangomez": "teatro fernan gomez",
+    "fernan-gomez": "teatro fernan gomez",
+    "fernan gómez": "teatro fernan gomez",
+    "guirau": "teatro fernan gomez",
+    "jardiel poncela": "teatro fernan gomez",
+
+    "espanol": "teatro espanol",
+    "teatro espanol": "teatro espanol",
+    "teatro español": "teatro espanol",
+    "teatroespanol": "teatro espanol",
+
+    "ifema": "ifema madrid",
+    "ifema madrid": "ifema madrid",
+
+    "condeduque": "condeduque madrid",
+    "condeduque madrid": "condeduque madrid",
+
+    "villanos": "sala villanos",
+    "sala villanos": "sala villanos",
+    "salavillanos": "sala villanos",
+
+    "galileo": "sala galileo galilei",
+    "sala galileo": "sala galileo galilei",
+    "galileo galilei": "sala galileo galilei",
+    "sala galileo galilei": "sala galileo galilei",
+    "salagalileo": "sala galileo galilei",
+
+    "clamores": "sala clamores",
+    "sala clamores": "sala clamores",
+
+    "nazca": "sala nazca",
+    "sala nazca": "sala nazca",
+    "nazca conciertos": "sala nazca",
+
+    "replika": "replika teatro",
+    "replika teatro": "replika teatro",
+    "réplika": "replika teatro",
+    "réplika teatro": "replika teatro",
+
+    "lab": "lab the club",
+    "lab the club": "lab the club",
+    "labtheclub": "lab the club",
+
+    "maria guerrero": "teatro maria guerrero",
+    "maria_guerrero": "teatro maria guerrero",
+    "maria-guerrero": "teatro maria guerrero",
+    "maría guerrero": "teatro maria guerrero",
+    "teatro maria guerrero": "teatro maria guerrero",
+    "teatro_maria_guerrero": "teatro maria guerrero",
+    "teatro-maria-guerrero": "teatro maria guerrero",
+    "teatro maría guerrero": "teatro maria guerrero",
+
+    "marquina": "teatro marquina",
+    "teatro marquina": "teatro marquina",
+
+    "principe": "teatro principe gran via",
+    "principe gran via": "teatro principe gran via",
+    "príncipe gran vía": "teatro principe gran via",
+    "teatro principe gran via": "teatro principe gran via",
+    "teatro príncipe gran vía": "teatro principe gran via",
+
+    "valle inclan": "teatro valle inclan",
+    "valle-inclan": "teatro valle inclan",
+    "valleinclan": "teatro valle inclan",
+    "teatro valle inclan": "teatro valle inclan",
+    "teatro valle-inclan": "teatro valle inclan",
+
+    "abadia": "teatro de la abadia",
+    "teatro de la abadia": "teatro de la abadia",
+    "teatro abadia": "teatro de la abadia",
+    "teatroabadia": "teatro de la abadia",
+
+    "circulo de bellas artes": "circulo de bellas artes",
+    "circulo bellas artes": "circulo de bellas artes",
+    "circulo_bellas_artes": "circulo de bellas artes",
+    "circulo-bellas-artes": "circulo de bellas artes",
+    "círculo de bellas artes": "circulo de bellas artes",
+    "círculo bellas artes": "circulo de bellas artes",
+    "cba": "circulo de bellas artes",
+
+    "lara": "teatro lara",
+    "teatro lara": "teatro lara",
+
+    "teatro bellas artes": "teatro bellas artes",
+    "teatrobellasartes": "teatro bellas artes",
+    "teatro-bellas-artes": "teatro bellas artes",
+
+    "price": "teatro circo price",
+    "circo price": "teatro circo price",
+    "teatro circo price": "teatro circo price",
+    "teatrocircoprice": "teatro circo price",
+
+    "la latina": "teatro la latina",
+    "teatro la latina": "teatro la latina",
+    "teatrolalatina": "teatro la latina",
+    "teatro_la_latina": "teatro la latina",
+    "teatro-la-latina": "teatro la latina",
+    "latina": "teatro la latina",
+
+    "teatroreal": "teatro real",
+    "teatro real": "teatro real",
+
+    "zarzuela": "teatro de la zarzuela",
+    "teatro zarzuela": "teatro de la zarzuela",
+    "teatro de la zarzuela": "teatro de la zarzuela",
+    "teatrodelazarzuela": "teatro de la zarzuela",
+
+    "lazaro galdiano": "museo lazaro galdiano",
+    "lázaro galdiano": "museo lazaro galdiano",
+    "museo lazaro galdiano": "museo lazaro galdiano",
+    "museo lázaro galdiano": "museo lazaro galdiano",
+    "lazarogaldiano": "museo lazaro galdiano",
+    "lazaro_galdiano": "museo lazaro galdiano",
+    "lazaro-galdiano": "museo lazaro galdiano",
+
+}
+
+
+SALA_VARIANTES = {
+    "movistar arena": [
+        "movistar arena",
+        "movistararena",
+        "wizink center",
+        "wi zink",
+    ],
+    "auditorio nacional": [
+        "auditorio nacional",
+        "auditorio nacional de musica",
+        "auditorionacional",
+        "auditorio nacional inaem",
+        "auditorio nacional de musica inaem",
+        "sala sinfonica",
+        "sala de camara",
+        "sala satelite",
+    ],
+    "palacio vistalegre": [
+        "palacio vistalegre",
+        "vistalegre",
+    ],
+    "sala la riviera": [
+        "sala la riviera",
+        "la riviera",
+        "riviera",
+    ],
+    "sala el sol": [
+        "sala el sol",
+        "salaelsol",
+    ],
+    "pequeno teatro gran via": [
+        "pequeno teatro gran via",
+        "pequeno gran via",
+        "pequeño teatro gran via",
+        "pequeño gran via",
+        "pequenogranvia",
+    ],
+    "teatro fernan gomez": [
+        "teatro fernan gomez",
+        "teatro fernán gómez",
+        "teatrofernangomez",
+        "teatro fernangomez",
+        "fernan gomez",
+        "fernán gómez",
+        "fernangomez",
+        "guirau",
+        "sala guirau",
+        "jardiel poncela",
+        "sala jardiel poncela",
+    ],
+    "teatro espanol": [
+        "teatro espanol",
+        "teatro español",
+        "teatroespanol",
+    ],
+    "ifema madrid": [
+        "ifema",
+        "ifema madrid",
+        "feria de madrid",
+    ],
+    "condeduque madrid": [
+        "condeduque madrid",
+        "condeduque",
+        "contemporanea condeduque",
+    ],
+    "sala villanos": [
+        "sala villanos",
+        "villanos",
+        "salavillanos",
+        "villanosmadrid",
+    ],
+    "sala galileo galilei": [
+        "sala galileo galilei",
+        "galileo galilei",
+        "sala galileo",
+        "salagalileo",
+        "salagalileo es",
+        "galileo madrid",
+    ],
+    "sala clamores": [
+        "sala clamores",
+        "clamores",
+        "clamores live",
+    ],
+    "sala nazca": [
+        "sala nazca",
+        "nazca",
+        "nazca conciertos",
+        "salanazcaconciertos",
+    ],
+    "replika teatro": [
+        "replika teatro",
+        "réplika teatro",
+        "replika",
+        "réplika",
+        "replikateatro",
+        "replikateatro com",
+    ],
+    "lab the club": [
+        "lab the club",
+        "labtheclub",
+        "labtheclub com",
+        "www labtheclub com",
+    ],
+    "teatro maria guerrero": [
+        "teatro maria guerrero",
+        "teatro maría guerrero",
+        "maria guerrero",
+        "maría guerrero",
+        "sala de la princesa",
+        "sala pequena",
+        "sala pequeña",
+    ],
+    "teatro marquina": [
+        "teatro marquina",
+        "marquina",
+        "grupomarquina",
+        "grupo marquina",
+    ],
+    "teatro principe gran via": [
+        "teatro principe gran via",
+        "teatro príncipe gran vía",
+        "principe gran via",
+        "príncipe gran vía",
+    ],
+    "teatro valle inclan": [
+        "teatro valle inclan",
+        "teatro valle-inclan",
+        "valle inclan",
+        "valle-inclan",
+        "valleinclan",
+        "sala francisco nieva",
+        "sala el mirlo blanco",
+    ],
+    "teatro de la abadia": [
+        "teatro de la abadia",
+        "teatro abadia",
+        "teatroabadia",
+        "sala juan de la cruz",
+        "sala jose luis alonso",
+        "sala josé luis alonso",
+    ],
+    "circulo de bellas artes": [
+        "circulo de bellas artes",
+        "círculo de bellas artes",
+        "circulo bellas artes",
+        "círculo bellas artes",
+        "circulobellasartes",
+    ],
+    "teatro lara": [
+        "teatro lara",
+        "teatrolara",
+        "teatrolara com",
+        "sala candido lara",
+        "sala cándido lara",
+        "sala lola membrives",
+    ],
+    "teatro bellas artes": [
+        "teatro bellas artes",
+        "teatrobellasartes",
+        "teatrobellasartes es",
+    ],
+    "teatro circo price": [
+        "teatro circo price",
+        "circo price",
+        "teatrocircoprice",
+        "teatrocircoprice es",
+    ],
+    "teatro la latina": [
+        "teatro la latina",
+        "la latina",
+        "latina",
+        "teatrolalatina",
+    ],
+    "teatro real": [
+        "teatroreal",
+    ],
+    "teatro real carlos iii de aranjuez": [
+        "teatro real carlos iii de aranjuez",
+        "teatro aranjuez",
+        "teatroaranjuez",
+        "teatro real carlos iii",
+    ],
+    "teatro de la zarzuela": [
+        "teatro de la zarzuela",
+        "teatrodelazarzuela",
+        "teatrodelazarzuela inaem gob es",
+    ],
+    "museo lazaro galdiano": [
+        "museo lazaro galdiano",
+        "museo lázaro galdiano",
+        "lazaro galdiano",
+        "lázaro galdiano",
+        "lazarogaldiano",
+    ],
+}
+
+
 def obtener_nombre_sala_canonico(sala_usuario):
     s = normalizar_texto(sala_usuario)
-
-    alias = {
-        "alcazar": "teatro alcazar",
-        "teatro alcazar": "teatro alcazar",
-
-        "gran via": "teatro gran via",
-        "granvia": "teatro gran via",
-        "teatro gran via": "teatro gran via",
-        "teatro granvia": "teatro gran via",
-
-        "capitol": "capitol gran via",
-        "capitol gran via": "capitol gran via",
-
-        "pequeno gran via": "pequeno teatro gran via",
-        "pequeno teatro gran via": "pequeno teatro gran via",
-        "pequeño gran via": "pequeno teatro gran via",
-        "pequeño teatro gran via": "pequeno teatro gran via",
-        "pequenogranvia": "pequeno teatro gran via",
-        "pequeñogranvia": "pequeno teatro gran via",
-
-        "figaro": "teatro figaro",
-        "teatro figaro": "teatro figaro",
-
-        "maravillas": "teatro maravillas",
-        "teatro maravillas": "teatro maravillas",
-
-        "canal": "teatros del canal",
-        "teatros del canal": "teatros del canal",
-
-        "eslava": "teatro eslava",
-        "teatro eslava": "teatro eslava",
-
-        "but": "sala but",
-        "sala but": "sala but",
-
-        "elsol": "sala el sol",
-        "el sol": "sala el sol",
-        "sala el sol": "sala el sol",
-
-        "riviera": "sala la riviera",
-        "la riviera": "sala la riviera",
-        "sala la riviera": "sala la riviera",
-
-        "berlin": "cafe berlin",
-        "cafe berlin": "cafe berlin",
-        "café berlin": "cafe berlin",
-
-        "movistar": "movistar arena",
-        "movistar arena": "movistar arena",
-        "movistararena": "movistar arena",
-
-        "auditorio": "auditorio nacional",
-        "auditorio nacional": "auditorio nacional",
-        "auditorio nacional de musica": "auditorio nacional",
-        "auditorionacional": "auditorio nacional",
-
-        "aranjuez": "teatro real carlos iii de aranjuez",
-        "teatro aranjuez": "teatro real carlos iii de aranjuez",
-
-        "matadero": "matadero madrid",
-        "matadero madrid": "matadero madrid",
-
-        "vistalegre": "palacio vistalegre",
-        "palacio vistalegre": "palacio vistalegre",
-        "vistalegre arena": "palacio vistalegre",
-    }
-
-    return alias.get(s)
+    return SALA_ALIAS.get(s)
 
 
 def coincide_sala(evento, sala):
@@ -207,67 +540,45 @@ def coincide_sala(evento, sala):
 
     sala_canonica = obtener_nombre_sala_canonico(sala)
 
+    # Caso especial:
+    # "teatro real" NO debe capturar "Teatro Real Carlos III de Aranjuez".
+    if sala_canonica == "teatro real":
+        return (
+            lugar_norm == "teatro real"
+            or texto_contiene_variante(url_norm, "teatroreal")
+            or texto_contiene_variante(fuente_norm, "teatroreal")
+        )
+
     if sala_canonica:
-        if sala_canonica in lugar_norm:
-            return True
-        if sala_canonica in fuente_norm:
-            return True
-        if sala_canonica in url_norm:
-            return True
+        candidatos = [sala_canonica] + SALA_VARIANTES.get(sala_canonica, [])
 
-        variantes = {
-            "movistar arena": [
-                "movistar arena",
-                "movistararena",
-                "wizink center",
-                "wi zink",
-            ],
-            "auditorio nacional": [
-                "auditorio nacional",
-                "auditorio nacional de musica",
-                "auditorionacional",
-                "inaem",
-                "sala sinfonica",
-                "sala de camara",
-                "sala satelite",
-            ],
-            "palacio vistalegre": [
-                "palacio vistalegre",
-                "vistalegre",
-            ],
-            "sala la riviera": [
-                "sala la riviera",
-                "la riviera",
-                "riviera",
-            ],
-            "sala el sol": [
-                "sala el sol",
-                "el sol",
-                "salaelsol",
-            ],
-            "pequeno teatro gran via": [
-                "pequeno teatro gran via",
-                "pequeno gran via",
-                "pequeño teatro gran via",
-                "pequeño gran via",
-                "pequenogranvia",
-            ],
-        }
+        for candidato in candidatos:
+            if texto_contiene_variante(lugar_norm, candidato):
+                return True
 
-        for variante in variantes.get(sala_canonica, []):
-            variante_norm = normalizar_texto(variante)
-            if variante_norm in lugar_norm or variante_norm in fuente_norm or variante_norm in url_norm:
+        for candidato in candidatos:
+            if texto_contiene_variante(url_norm, candidato):
+                return True
+
+        for candidato in SALA_VARIANTES.get(sala_canonica, []):
+            if texto_contiene_variante(fuente_norm, candidato):
                 return True
 
         return False
 
-    return sala_norm in lugar_norm or sala_norm in fuente_norm or sala_norm in url_norm
+    return (
+        texto_contiene_variante(lugar_norm, sala_norm)
+        or texto_contiene_variante(url_norm, sala_norm)
+    )
 
 
-def filtrar_eventos(eventos, fecha_inicio=None, fecha_fin=None, sala=None):
+def filtrar_eventos(eventos, fecha_inicio=None, fecha_fin=None, sala=None, solo_activos=True):
     resultado = []
 
     for evento in eventos:
+        if solo_activos and evento.get("estado") not in {"activo", "nuevo"}:
+            continue
+
         if not coincide_sala(evento, sala):
             continue
 

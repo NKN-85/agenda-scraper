@@ -23,25 +23,39 @@ from riviera import sacar_riviera
 from berlin import sacar_berlin
 from movistararena import sacar_movistararena
 from auditorio import sacar_auditorio
+from fernangomez import sacar_fernangomez
+from teatroespanol import sacar_teatroespanol
+from ifema import sacar_ifema
+from condeduque import sacar_condeduque
+from salavillanos import sacar_salavillanos
+from galileo import sacar_galileo
+from clamores import sacar_clamores
+from nazca import sacar_nazca
+from replika import sacar_replika
+from labtheclub import sacar_labtheclub
+from maria_guerrero import sacar_maria_guerrero
+from grupomarquina import sacar_grupomarquina
+from valle_inclan import sacar_valle_inclan
+from abadia import sacar_abadia
+from circulo_bellas_artes import sacar_circulo_bellas_artes
+from lara import sacar_lara
+from bellasartes import sacar_bellasartes
+from price import sacar_price
+from teatrolalatina import sacar_teatrolalatina
+from teatroreal import sacar_teatroreal
+from zarzuela import sacar_zarzuela
+from lazarogaldiano import sacar_lazarogaldiano
 
 from utils import get_url, limpiar_texto, construir_fecha, normalizar_info_fecha
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-# -------------------------
-# HELPERS COMPATIBILIDAD
-# -------------------------
-
 def evento_es_dict(evento):
     return isinstance(evento, dict)
 
 
 def fila_antigua_a_evento_dict(fila):
-    """
-    Compatibilidad temporal por si alguna sala sigue devolviendo:
-    [titulo, fecha_str, lugar, url_evento, fuente]
-    """
     if not isinstance(fila, (list, tuple)) or len(fila) < 5:
         return None
 
@@ -68,9 +82,6 @@ def fila_antigua_a_evento_dict(fila):
 
 
 def normalizar_evento_entrada(evento):
-    """
-    Acepta dict enriquecido o fila antigua y devuelve siempre dict homogéneo.
-    """
     if evento_es_dict(evento):
         info_fecha = normalizar_info_fecha(
             info_fecha={
@@ -129,10 +140,6 @@ def limpiar_eventos(eventos):
 
     return resultado
 
-
-# -------------------------
-# EXPORTACIÓN
-# -------------------------
 
 def guardar_csv(eventos, nombre_archivo="eventos.csv"):
     with open(nombre_archivo, "w", newline="", encoding="utf-8-sig") as f:
@@ -202,10 +209,6 @@ def guardar_json(eventos, nombre_archivo="eventos.json"):
         json.dump(eventos_json, f, ensure_ascii=False, indent=2)
 
 
-# -------------------------
-# MASTER
-# -------------------------
-
 def cargar_master(nombre="eventos_master.json"):
     if not os.path.exists(nombre):
         return []
@@ -219,15 +222,18 @@ def guardar_master(eventos, nombre="eventos_master.json"):
         json.dump(eventos, f, ensure_ascii=False, indent=2)
 
 
-# -------------------------
-# CLAVE
-# -------------------------
-
 def clave_evento_json(evento):
-    return (
-        (evento.get("url_evento", "") or "").strip().lower(),
-        (evento.get("lugar", "") or "").strip().lower(),
-    )
+    url = (evento.get("url_evento", "") or "").strip().lower()
+    lugar = (evento.get("lugar", "") or "").strip().lower()
+    titulo = (evento.get("titulo", "") or "").strip().lower()
+
+    # Para fichas únicas tipo Teatro Real:
+    # evita duplicados si cambia el lugar entre "Teatro Real" y "Teatro Real - Sala Principal".
+    if url and "/espectaculo/" in url:
+        return (url,)
+
+    # Resto de salas: no fusiona eventos distintos que comparten URL genérica.
+    return (url, lugar, titulo)
 
 
 def indexar_por_clave(eventos):
@@ -241,14 +247,7 @@ def indexar_por_clave(eventos):
     return indice
 
 
-# -------------------------
-# ORDEN
-# -------------------------
-
 def clave_orden_fecha(evento):
-    """
-    Ordena por fecha representativa ISO.
-    """
     if not isinstance(evento, dict):
         evento = fila_antigua_a_evento_dict(evento)
         if not evento:
@@ -269,10 +268,6 @@ def clave_orden_fecha(evento):
             evento.get("titulo", "").lower(),
         )
 
-
-# -------------------------
-# CLASIFICACIÓN BÁSICA
-# -------------------------
 
 def clasificar_tipo_evento(evento):
     titulo = evento.get("titulo", "").lower()
@@ -311,11 +306,35 @@ def clasificar_tipo_evento(evento):
     if any(p in texto for p in ["concierto", "tour", "band", "trío", "trio", "orquesta", "sinfónico", "sinfonico", "quartet", "cuarteto", "gira"]):
         return "concierto"
 
-    if any(p in lugar for p in ["sala", "arena", "café berlín", "cafe berlin", "auditorio", "teatro eslava"]):
-        return "concierto"
-
-    if any(p in lugar for p in ["teatro", "teatros del canal", "figaro", "alcázar", "alcazar", "gran vía", "gran via", "maravillas"]):
+    if any(p in lugar for p in [
+        "teatro",
+        "teatros del canal",
+        "figaro",
+        "alcázar",
+        "alcazar",
+        "gran vía",
+        "gran via",
+        "maravillas",
+        "fernán gómez",
+        "fernan gomez",
+        "guirau",
+        "jardiel poncela",
+    ]):
         return "teatro"
+
+    if any(p in lugar for p in [
+        "arena",
+        "café berlín",
+        "cafe berlin",
+        "auditorio",
+        "teatro eslava",
+        "sala but",
+        "sala el sol",
+        "la riviera",
+        "palacio vistalegre",
+        "movistar arena",
+    ]):
+        return "concierto"
 
     return "otros"
 
@@ -360,6 +379,15 @@ def generar_tags(evento, tipo_evento):
     if "pequeño teatro gran vía" in lugar or "pequeno teatro gran via" in lugar:
         tags.add("pequeno-teatro-gran-via")
 
+    if "fernán gómez" in lugar or "fernan gomez" in lugar:
+        tags.add("teatro-fernan-gomez")
+
+    if "guirau" in lugar:
+        tags.add("sala-guirau")
+
+    if "jardiel poncela" in lugar:
+        tags.add("sala-jardiel-poncela")
+
     if any(p in titulo for p in ["flamenco"]):
         tags.add("flamenco")
 
@@ -384,10 +412,6 @@ def generar_tags(evento, tipo_evento):
     return sorted(tags)
 
 
-# -------------------------
-# HELPERS FECHAS EXTRA
-# -------------------------
-
 def _lineas_limpias_html(html):
     soup = BeautifulSoup(html, "html.parser")
     return [
@@ -396,10 +420,6 @@ def _lineas_limpias_html(html):
         if limpiar_texto(l)
     ]
 
-
-# -------------------------
-# METADATOS EXTRA CANAL
-# -------------------------
 
 def _parsear_linea_fechas_canal(linea):
     texto = limpiar_texto(linea).lower()
@@ -498,10 +518,6 @@ def extraer_metadatos_canal(url_evento):
 
     return {}
 
-
-# -------------------------
-# METADATOS EXTRA GRUPOSMEDIA
-# -------------------------
 
 def _parsear_linea_fechas_gruposmedia(linea):
     texto = limpiar_texto(linea).lower()
@@ -626,10 +642,6 @@ def extraer_metadatos_fuente(url_evento):
     return {}
 
 
-# -------------------------
-# ENRIQUECIMIENTO
-# -------------------------
-
 def enriquecer_evento_nuevo(evento):
     ahora = datetime.now().isoformat()
     tipo_evento = clasificar_tipo_evento(evento)
@@ -676,10 +688,6 @@ def actualizar_evento_existente(evento_master, evento_actual):
 
     return evento_master
 
-
-# -------------------------
-# CORE INCREMENTAL
-# -------------------------
 
 def reconciliar_master(eventos_json_actuales, master_anterior):
     ahora = datetime.now().isoformat()
@@ -732,10 +740,6 @@ def reconciliar_master(eventos_json_actuales, master_anterior):
     return master_actualizado, nuevos, existentes, desaparecidos, duplicados_en_lote
 
 
-# -------------------------
-# MAIN
-# -------------------------
-
 def main():
     todos_los_eventos = []
     master_anterior = cargar_master()
@@ -760,6 +764,28 @@ def main():
         sacar_berlin,
         sacar_movistararena,
         sacar_auditorio,
+        sacar_fernangomez,
+        sacar_teatroespanol,
+        sacar_ifema,
+        sacar_condeduque,
+        sacar_salavillanos,
+        sacar_galileo,
+        sacar_clamores,
+        sacar_nazca,
+        sacar_replika,
+        sacar_labtheclub,
+        sacar_maria_guerrero,
+        sacar_grupomarquina,
+        sacar_valle_inclan,
+        sacar_abadia,
+        sacar_circulo_bellas_artes,
+        sacar_lara,
+        sacar_bellasartes,
+        sacar_price,
+        sacar_teatrolalatina,
+        sacar_teatroreal,
+        sacar_zarzuela,
+        sacar_lazarogaldiano,
     ]
 
     for funcion in fuentes:

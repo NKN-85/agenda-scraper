@@ -528,6 +528,69 @@ def normalizar_info_fecha(info_fecha=None, fecha_evento=None):
 
 
 # -------------------------
+# FILTRO CONSERVADOR DE VIGENCIA
+# -------------------------
+
+def _datos_fecha_siguen_vigentes(datos_fecha):
+    """
+    Filtro conservador para no romper scrapers existentes.
+
+    SOLO descarta cuando está claro que el evento ya terminó.
+    Si faltan datos o son ambiguos, mantiene el evento.
+    """
+    if not datos_fecha:
+        return False
+
+    hoy = date.today()
+    tipo = (datos_fecha.get("tipo_fecha") or "").strip().lower()
+
+    # 1) Fecha única
+    if tipo == "unica":
+        fecha = parse_fecha_iso(datos_fecha.get("fecha"))
+        if not fecha:
+            return True
+        return fecha >= hoy
+
+    # 2) Lista de fechas
+    if tipo == "lista":
+        fechas = [
+            parse_fecha_iso(f)
+            for f in (datos_fecha.get("fechas_funcion") or [])
+        ]
+        fechas = [f for f in fechas if f]
+
+        if not fechas:
+            return True
+
+        return any(f >= hoy for f in fechas)
+
+    # 3) Rango / hasta / patrón
+    if tipo in {"rango", "hasta", "patron"}:
+        fecha_fin = parse_fecha_iso(datos_fecha.get("fecha_fin"))
+
+        # si no tenemos fin, no arriesgamos
+        if not fecha_fin:
+            return True
+
+        return fecha_fin >= hoy
+
+    # 4) Desde
+    if tipo == "desde":
+        return True
+
+    # 5) Fallback conservador
+    fecha_fin = parse_fecha_iso(datos_fecha.get("fecha_fin"))
+    if fecha_fin:
+        return fecha_fin >= hoy
+
+    fecha = parse_fecha_iso(datos_fecha.get("fecha"))
+    if fecha:
+        return fecha >= hoy
+
+    return True
+
+
+# -------------------------
 # AGREGAR EVENTO ENRIQUECIDO
 # -------------------------
 
@@ -544,6 +607,10 @@ def agregar_evento(eventos, vistos, titulo, fecha_evento, lugar, url_evento, fue
         return False
 
     if not datos_fecha.get("fecha") and not datos_fecha.get("fecha_fin"):
+        return False
+
+    # filtro defensivo global: evita históricos ya terminados
+    if not _datos_fecha_siguen_vigentes(datos_fecha):
         return False
 
     vistos.add(clave)

@@ -2,7 +2,7 @@ from datetime import date, timedelta
 import re
 import unicodedata
 
-from helpers.fechas_eventos import es_mejor_info_fecha, info_lista, info_unica
+from helpers.fechas_eventos import es_mejor_info_fecha, info_lista, info_unica, info_rango, info_hasta, info_desde, info_patron
 from helpers.parser_fechas import (
     parsear_texto_fecha,
     parsear_patron_semanal,
@@ -19,6 +19,21 @@ STOPWORDS_TITULO = {
     "hora", "horas", "domingo", "domingos", "lunes", "martes",
     "miercoles", "miércoles", "jueves", "viernes", "sabado", "sábado",
     "alterno", "alternos",
+}
+
+MAPA_DIAS_LOCAL = {
+    "lunes": 0,
+    "martes": 1,
+    "miercoles": 2,
+    "miércoles": 2,
+    "jueves": 3,
+    "viernes": 4,
+    "sabado": 5,
+    "sábado": 5,
+    "sabados": 5,
+    "sábados": 5,
+    "domingo": 6,
+    "domingos": 6,
 }
 
 
@@ -417,6 +432,164 @@ def extraer_fechas_exclusion(textos, anio_defecto=None):
     return sorted(fechas)
 
 
+def expandir_rango_dias_local(dia_inicio, dia_fin):
+    orden = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+
+    d1 = normalizar_texto_fecha(dia_inicio)
+    d2 = normalizar_texto_fecha(dia_fin)
+
+    if d1 not in orden or d2 not in orden:
+        return []
+
+    i1 = orden.index(d1)
+    i2 = orden.index(d2)
+
+    if i1 <= i2:
+        nombres = orden[i1:i2 + 1]
+    else:
+        nombres = orden[i1:] + orden[:i2 + 1]
+
+    return [MAPA_DIAS_LOCAL[n] for n in nombres]
+
+
+def extraer_patron_resiliente(texto, fecha_inicio=None, fecha_fin=None):
+    """
+    Refuerzo específico para GruposMedia:
+    detecta todos los días de una línea con horarios del estilo:
+    - De miércoles a viernes: 20:00 h. Sábados: 18:00 h. Domingos: 18:00 h.
+    - Viernes y sábados: 19:00 h. Domingos: 17:00 h.
+    """
+    t = normalizar_texto_fecha(texto)
+    dias = set()
+
+    # Rangos: de martes a jueves
+    for m in re.finditer(
+        r"de\s+(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\s+a\s+(lunes|martes|miercoles|jueves|viernes|sabado|domingo)",
+        t,
+    ):
+        dias.update(expandir_rango_dias_local(m.group(1), m.group(2)))
+
+    # Pares: viernes y sabados / miercoles y jueves
+    for m in re.finditer(
+        r"\b(lunes|martes|miercoles|jueves|viernes|sabado|domingo)s?\s+y\s+(lunes|martes|miercoles|jueves|viernes|sabado|domingo)s?\b",
+        t,
+    ):
+        for g in m.groups():
+            g_norm = normalizar_texto_fecha(g)
+            if g_norm in MAPA_DIAS_LOCAL:
+                dias.add(MAPA_DIAS_LOCAL[g_norm])
+
+    # Días sueltos seguidos de ":" o de referencia horaria
+    for nombre, idx in MAPA_DIAS_LOCAL.items():
+        if re.search(rf"\b{re.escape(nombre)}\b\s*:", t):
+            dias.add(idx)
+
+    # Si hay horas, barrido amplio de días en la línea
+    if re.search(r"\d{{1,2}}(?::|\.)\d{{2}}", t):
+        for nombre, idx in MAPA_DIAS_LOCAL.items():
+            if re.search(rf"\b{re.escape(nombre)}\b", t):
+                dias.add(idx)
+
+    if not dias:
+        return None
+
+    return info_patron(
+        dias_semana=sorted(dias),
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        texto_original=texto,
+    )
+
+
+def extraer_limites_flexibles(textos):
+    """
+    Refuerzo para formatos de GruposMedia que a veces no captura parser_fechas:
+    - Del 1 julio al 26 de julio de 2026
+    - Del 20 de agosto al 27 de septiembre de 2026
+    - Hasta el 28 de junio de 2026
+    """
+    for texto in textos:
+        t = normalizar_texto_fecha(texto)
+
+        # Hasta el 28 de junio de 2026
+        m = re.search(
+            r"hasta\s+el\s+(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})",
+            t,
+        )
+        if m:
+            fin = construir_fecha_segura(int(m.group(1)), m.group(2), int(m.group(3)))
+            if fin:
+                return info_hasta(fin, texto)
+
+        # Desde el 10 de abril de 2026
+        m = re.search(
+            r"desde\s+el\s+(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})",
+            t,
+        )
+        if m:
+            inicio = construir_fecha_segura(int(m.group(1)), m.group(2), int(m.group(3)))
+            if inicio:
+                return info_desde(inicio, texto)
+
+        # Del 20 de agosto al 27 de septiembre de 2026
+        m = re.search(
+            r"del\s+(\d{1,2})\s+de\s+([a-z]+)\s+al\s+(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})",
+            t,
+        )
+        if m:
+            inicio = construir_fecha_segura(int(m.group(1)), m.group(2), int(m.group(5)))
+            fin = construir_fecha_segura(int(m.group(3)), m.group(4), int(m.group(5)))
+            if inicio and fin:
+                return info_rango(inicio, fin, texto)
+
+        # Del 1 julio al 26 de julio de 2026
+        m = re.search(
+            r"del\s+(\d{1,2})\s+([a-z]+)\s+al\s+(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})",
+            t,
+        )
+        if m:
+            inicio = construir_fecha_segura(int(m.group(1)), m.group(2), int(m.group(5)))
+            fin = construir_fecha_segura(int(m.group(3)), m.group(4), int(m.group(5)))
+            if inicio and fin:
+                return info_rango(inicio, fin, texto)
+
+        # Del 15 al 27 de mayo de 2026
+        m = re.search(
+            r"del\s+(\d{1,2})\s+al\s+(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})",
+            t,
+        )
+        if m:
+            inicio = construir_fecha_segura(int(m.group(1)), m.group(3), int(m.group(4)))
+            fin = construir_fecha_segura(int(m.group(2)), m.group(3), int(m.group(4)))
+            if inicio and fin:
+                return info_rango(inicio, fin, texto)
+
+    return None
+
+
+def fusionar_patrones(patrones, fecha_inicio=None, fecha_fin=None):
+    if not patrones:
+        return None
+
+    dias = set()
+    textos_originales = []
+
+    for patron in patrones:
+        dias.update(patron.get("dias_semana") or [])
+        if patron.get("texto_fecha_original"):
+            textos_originales.append(str(patron.get("texto_fecha_original")))
+
+    if not dias:
+        return None
+
+    return info_patron(
+        dias_semana=sorted(dias),
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        texto_original=" | ".join(textos_originales) if textos_originales else None,
+    )
+
+
 def resolver_info_fecha_de_textos(textos, titulo_evento=None):
     if not textos:
         return None
@@ -427,9 +600,9 @@ def resolver_info_fecha_de_textos(textos, titulo_evento=None):
 
     mejor = None
     mejor_limites = None
-    mejor_patron = None
     fechas_explicitas = set()
     hay_alternos = False
+    patrones_detectados = []
 
     fechas_linea_funciones = extraer_fechas_de_lineas_funciones(textos)
     if fechas_linea_funciones:
@@ -453,6 +626,10 @@ def resolver_info_fecha_de_textos(textos, titulo_evento=None):
 
         fechas_explicitas.update(extraer_fechas_explicitas(texto))
 
+    # Fallback de límites para formatos de GruposMedia que no siempre coge parser_fechas
+    if not mejor_limites:
+        mejor_limites = extraer_limites_flexibles(textos)
+
     fecha_inicio = mejor_limites.get("fecha_inicio") if mejor_limites else None
     fecha_fin = mejor_limites.get("fecha_fin") if mejor_limites else None
 
@@ -462,8 +639,22 @@ def resolver_info_fecha_de_textos(textos, titulo_evento=None):
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
         )
-        if patron and es_mejor_info_fecha(patron, mejor_patron):
-            mejor_patron = patron
+        if patron:
+            patrones_detectados.append(patron)
+
+        patron_refuerzo = extraer_patron_resiliente(
+            texto,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+        )
+        if patron_refuerzo:
+            patrones_detectados.append(patron_refuerzo)
+
+    mejor_patron = fusionar_patrones(
+        patrones_detectados,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+    )
 
     if hay_alternos:
         fechas_titulo = extraer_fechas_relacionadas_con_titulo(

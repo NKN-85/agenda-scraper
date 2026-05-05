@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Response
+from pydantic import BaseModel
+from typing import Any, Dict, List, Optional, Union
 import requests
 import unicodedata
 import os
@@ -9,8 +11,81 @@ from datetime import date, timedelta, datetime
 app = FastAPI(
     title="API Agenda Cultural",
     description="API para consultar eventos de agenda cultural",
-    version="2.3.0"
+    version="2.4.0",
+    servers=[
+        {
+            "url": "https://agenda-api-zpmf.onrender.com",
+            "description": "Render production"
+        }
+    ]
 )
+
+
+class RootResponse(BaseModel):
+    ok: bool
+    servicio: str
+
+
+class EventosResponse(BaseModel):
+    total: int
+    eventos: List[Dict[str, Any]]
+
+
+class EventosRangoResponse(BaseModel):
+    desde: str
+    hasta: str
+    total: int
+    eventos: List[Dict[str, Any]]
+
+
+class EventosDiaResponse(BaseModel):
+    fecha: str
+    total: int
+    eventos: List[Dict[str, Any]]
+
+
+class EvergreenItem(BaseModel):
+    id: str
+    titulo: str
+    url: str
+    fuente: str
+    categoria: str
+    intencion: str
+    tipo_contenido: str
+    pagina_padre: str
+    descripcion: Optional[str] = ""
+    score_editorial: int
+
+
+class EvergreenCategoria(BaseModel):
+    categoria: str
+    total_items: int
+    items: List[EvergreenItem]
+
+
+class EvergreenBloque(BaseModel):
+    intencion: str
+    total_items: int
+    categorias: List[EvergreenCategoria]
+
+
+class EvergreenResponse(BaseModel):
+    total_bloques: int
+    bloques: List[EvergreenBloque]
+
+
+class EvergreenTopResponse(BaseModel):
+    intencion: str
+    categoria: Optional[str] = None
+    limit: int
+    total_disponibles: int
+    total_devuelto: int
+    items: List[EvergreenItem]
+
+
+class ErrorResponse(BaseModel):
+    error: str
+    intenciones_disponibles: List[str]
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -517,16 +592,16 @@ def extraer_items_evergreen(bloque, categoria=None):
     )
 
 
-@app.get("/")
+@app.get("/", response_model=RootResponse)
 def root():
     return {"ok": True, "servicio": "API Agenda Cultural"}
 
 
-@app.get("/eventos")
+@app.get("/eventos", response_model=EventosResponse)
 def obtener_eventos(
-    sala: str = None,
-    fecha_desde: str = None,
-    fecha_hasta: str = None
+    sala: Optional[str] = None,
+    fecha_desde: Optional[str] = None,
+    fecha_hasta: Optional[str] = None
 ):
     eventos = cargar_eventos()
 
@@ -546,8 +621,8 @@ def obtener_eventos(
     }
 
 
-@app.get("/eventos/fin-de-semana")
-def eventos_fin_de_semana(sala: str = None):
+@app.get("/eventos/fin-de-semana", response_model=EventosRangoResponse)
+def eventos_fin_de_semana(sala: Optional[str] = None):
     hoy = date.today()
 
     dias_hasta_viernes = (4 - hoy.weekday()) % 7
@@ -565,8 +640,8 @@ def eventos_fin_de_semana(sala: str = None):
     }
 
 
-@app.get("/eventos/hoy")
-def eventos_hoy(sala: str = None):
+@app.get("/eventos/hoy", response_model=EventosDiaResponse)
+def eventos_hoy(sala: Optional[str] = None):
     hoy = date.today()
     eventos = cargar_eventos()
     filtrados = filtrar_eventos(eventos, hoy, hoy, sala=sala)
@@ -578,8 +653,8 @@ def eventos_hoy(sala: str = None):
     }
 
 
-@app.get("/eventos/manana")
-def eventos_manana(sala: str = None):
+@app.get("/eventos/manana", response_model=EventosDiaResponse)
+def eventos_manana(sala: Optional[str] = None):
     manana = date.today() + timedelta(days=1)
     eventos = cargar_eventos()
     filtrados = filtrar_eventos(eventos, manana, manana, sala=sala)
@@ -591,7 +666,7 @@ def eventos_manana(sala: str = None):
     }
 
 
-@app.get("/evergreen")
+@app.get("/evergreen", response_model=EvergreenResponse)
 def obtener_evergreen():
     bloques = cargar_evergreen()
 
@@ -601,11 +676,11 @@ def obtener_evergreen():
     }
 
 
-@app.get("/evergreen/{intencion}/top")
+@app.get("/evergreen/{intencion}/top", response_model=Union[EvergreenTopResponse, ErrorResponse])
 def obtener_top_evergreen_por_intencion(
     intencion: str,
     limit: int = 5,
-    categoria: str = None
+    categoria: Optional[str] = None
 ):
     bloques = cargar_evergreen()
     bloque = buscar_bloque_evergreen(bloques, intencion)
@@ -636,7 +711,7 @@ def obtener_top_evergreen_por_intencion(
     }
 
 
-@app.get("/evergreen/{intencion}")
+@app.get("/evergreen/{intencion}", response_model=Union[EvergreenBloque, ErrorResponse])
 def obtener_evergreen_por_intencion(intencion: str):
     bloques = cargar_evergreen()
     bloque = buscar_bloque_evergreen(bloques, intencion)

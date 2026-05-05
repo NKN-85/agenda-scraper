@@ -660,18 +660,6 @@
     "score_editorial": 66
   },
   {
-    "id": "054a1bf7f7a51595b75858746055d040",
-    "titulo": "Quinta del Duque del Arco",
-    "url": "https://www.esmadrid.com/informacion-turistica/quinta-duque-arco",
-    "fuente": "esmadrid",
-    "categoria": "parques_jardines",
-    "intencion": "naturaleza",
-    "tipo_contenido": "individual",
-    "pagina_padre": "https://www.esmadrid.com/parques-jardines-madrid",
-    "descripcion": "El Pardo alberga este casi desconocido palacete rodeado de un hermoso jardín barroco, perteneciente a Patrimonio Nacional.",
-    "score_editorial": 66
-  },
-  {
     "id": "1c33d68808b5b2abd78d1b8594166f2a",
     "titulo": "Círculo de Bellas Artes",
     "url": "https://www.esmadrid.com/informacion-turistica/circulo-de-bellas-artes",
@@ -973,14 +961,14 @@
   },
   {
     "id": "9a08ac963b9f60316a2fca067994f232",
-    "titulo": "Comercios Centenarios",
+    "titulo": "Comercios centenarios",
     "url": "https://www.esmadrid.com/comercios-centenarios-madrid",
     "fuente": "esmadrid",
     "categoria": "tradicion_cultura",
     "intencion": "cultura",
     "tipo_contenido": "individual",
     "pagina_padre": "https://www.esmadrid.com/tradicion-cultura-madrid",
-    "descripcion": "Comercios Centenarios",
+    "descripcion": "",
     "score_editorial": 60
   },
   {
@@ -1100,7 +1088,7 @@
     "intencion": "naturaleza",
     "tipo_contenido": "individual",
     "pagina_padre": "https://www.esmadrid.com/parques-jardines-madrid",
-    "descripcion": "",
+    "descripcion": "Cerca de la Feria de Madrid se esconde uno de los parques más sorprendentes de Madrid. ¡No te pierdas al final del invierno sus almendros en flor!",
     "score_editorial": 58
   },
   {
@@ -1160,7 +1148,19 @@
     "intencion": "naturaleza",
     "tipo_contenido": "individual",
     "pagina_padre": "https://www.esmadrid.com/parques-jardines-madrid",
-    "descripcion": "Espléndido jardín paisajista encargado por el monarca Felipe IV.  Abierto todos los días.",
+    "descripcion": "",
+    "score_editorial": 58
+  },
+  {
+    "id": "054a1bf7f7a51595b75858746055d040",
+    "titulo": "Quinta del Duque del Arco",
+    "url": "https://www.esmadrid.com/informacion-turistica/quinta-duque-arco",
+    "fuente": "esmadrid",
+    "categoria": "parques_jardines",
+    "intencion": "naturaleza",
+    "tipo_contenido": "individual",
+    "pagina_padre": "https://www.esmadrid.com/parques-jardines-madrid",
+    "descripcion": "",
     "score_editorial": 58
   },
   {

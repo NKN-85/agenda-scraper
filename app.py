@@ -9,7 +9,7 @@ from datetime import date, timedelta, datetime
 app = FastAPI(
     title="API Agenda Cultural",
     description="API para consultar eventos de agenda cultural",
-    version="2.2.0"
+    version="2.3.0"
 )
 
 
@@ -19,6 +19,8 @@ def favicon():
 
 
 URL_JSON = "https://raw.githubusercontent.com/NKN-85/agenda-scraper/refs/heads/main/eventos_master.json"
+URL_EVERGREEN_JSON = "https://raw.githubusercontent.com/NKN-85/agenda-scraper/refs/heads/main/evergreen_output.json"
+
 ENV = os.getenv("ENV", "local")
 
 
@@ -30,6 +32,22 @@ def cargar_eventos():
     response = requests.get(URL_JSON, timeout=20)
     response.raise_for_status()
     return response.json()
+
+
+def cargar_evergreen():
+    if ENV == "local":
+        try:
+            with open("evergreen_output.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return []
+
+    try:
+        response = requests.get(URL_EVERGREEN_JSON, timeout=20)
+        response.raise_for_status()
+        return response.json()
+    except Exception:
+        return []
 
 
 def normalizar_texto(texto):
@@ -137,71 +155,54 @@ def coincide_fechas(evento, fecha_inicio, fecha_fin):
 SALA_ALIAS = {
     "alcazar": "teatro alcazar",
     "teatro alcazar": "teatro alcazar",
-
     "gran via": "teatro gran via",
     "granvia": "teatro gran via",
     "teatro gran via": "teatro gran via",
     "teatro granvia": "teatro gran via",
-
     "capitol": "capitol gran via",
     "capitol gran via": "capitol gran via",
-
     "pequeno gran via": "pequeno teatro gran via",
     "pequeno teatro gran via": "pequeno teatro gran via",
     "pequeño gran via": "pequeno teatro gran via",
     "pequeño teatro gran via": "pequeno teatro gran via",
     "pequenogranvia": "pequeno teatro gran via",
     "pequeñogranvia": "pequeno teatro gran via",
-
     "figaro": "teatro figaro",
     "teatro figaro": "teatro figaro",
-
     "maravillas": "teatro maravillas",
     "teatro maravillas": "teatro maravillas",
-
     "canal": "teatros del canal",
     "teatros del canal": "teatros del canal",
-
     "eslava": "teatro eslava",
     "teatro eslava": "teatro eslava",
-
     "but": "sala but",
     "sala but": "sala but",
-
     "elsol": "sala el sol",
     "el sol": "sala el sol",
     "sala el sol": "sala el sol",
-
     "riviera": "sala la riviera",
     "la riviera": "sala la riviera",
     "sala la riviera": "sala la riviera",
-
     "berlin": "cafe berlin",
     "cafe berlin": "cafe berlin",
     "café berlin": "cafe berlin",
-
     "movistar": "movistar arena",
     "movistar arena": "movistar arena",
     "movistararena": "movistar arena",
-
     "auditorio": "auditorio nacional",
     "inaem": "auditorio nacional",
     "auditorio nacional": "auditorio nacional",
     "auditorio nacional de musica": "auditorio nacional",
     "auditorionacional": "auditorio nacional",
-
     "aranjuez": "teatro real carlos iii de aranjuez",
     "teatro aranjuez": "teatro real carlos iii de aranjuez",
     "teatro real carlos iii": "teatro real carlos iii de aranjuez",
     "teatro real carlos iii de aranjuez": "teatro real carlos iii de aranjuez",
-
     "matadero": "matadero madrid",
     "matadero madrid": "matadero madrid",
-
     "vistalegre": "palacio vistalegre",
     "palacio vistalegre": "palacio vistalegre",
     "vistalegre arena": "palacio vistalegre",
-
     "fernan": "teatro fernan gomez",
     "fernan gomez": "teatro fernan gomez",
     "fernangomez": "teatro fernan gomez",
@@ -213,44 +214,34 @@ SALA_ALIAS = {
     "fernan gómez": "teatro fernan gomez",
     "guirau": "teatro fernan gomez",
     "jardiel poncela": "teatro fernan gomez",
-
     "espanol": "teatro espanol",
     "teatro espanol": "teatro espanol",
     "teatro español": "teatro espanol",
     "teatroespanol": "teatro espanol",
-
     "ifema": "ifema madrid",
     "ifema madrid": "ifema madrid",
-
     "condeduque": "condeduque madrid",
     "condeduque madrid": "condeduque madrid",
-
     "villanos": "sala villanos",
     "sala villanos": "sala villanos",
     "salavillanos": "sala villanos",
-
     "galileo": "sala galileo galilei",
     "sala galileo": "sala galileo galilei",
     "galileo galilei": "sala galileo galilei",
     "sala galileo galilei": "sala galileo galilei",
     "salagalileo": "sala galileo galilei",
-
     "clamores": "sala clamores",
     "sala clamores": "sala clamores",
-
     "nazca": "sala nazca",
     "sala nazca": "sala nazca",
     "nazca conciertos": "sala nazca",
-
     "replika": "replika teatro",
     "replika teatro": "replika teatro",
     "réplika": "replika teatro",
     "réplika teatro": "replika teatro",
-
     "lab": "lab the club",
     "lab the club": "lab the club",
     "labtheclub": "lab the club",
-
     "maria guerrero": "teatro maria guerrero",
     "maria_guerrero": "teatro maria guerrero",
     "maria-guerrero": "teatro maria guerrero",
@@ -259,27 +250,22 @@ SALA_ALIAS = {
     "teatro_maria_guerrero": "teatro maria guerrero",
     "teatro-maria-guerrero": "teatro maria guerrero",
     "teatro maría guerrero": "teatro maria guerrero",
-
     "marquina": "teatro marquina",
     "teatro marquina": "teatro marquina",
-
     "principe": "teatro principe gran via",
     "principe gran via": "teatro principe gran via",
     "príncipe gran vía": "teatro principe gran via",
     "teatro principe gran via": "teatro principe gran via",
     "teatro príncipe gran vía": "teatro principe gran via",
-
     "valle inclan": "teatro valle inclan",
     "valle-inclan": "teatro valle inclan",
     "valleinclan": "teatro valle inclan",
     "teatro valle inclan": "teatro valle inclan",
     "teatro valle-inclan": "teatro valle inclan",
-
     "abadia": "teatro de la abadia",
     "teatro de la abadia": "teatro de la abadia",
     "teatro abadia": "teatro de la abadia",
     "teatroabadia": "teatro de la abadia",
-
     "circulo de bellas artes": "circulo de bellas artes",
     "circulo bellas artes": "circulo de bellas artes",
     "circulo_bellas_artes": "circulo de bellas artes",
@@ -287,34 +273,27 @@ SALA_ALIAS = {
     "círculo de bellas artes": "circulo de bellas artes",
     "círculo bellas artes": "circulo de bellas artes",
     "cba": "circulo de bellas artes",
-
     "lara": "teatro lara",
     "teatro lara": "teatro lara",
-
     "teatro bellas artes": "teatro bellas artes",
     "teatrobellasartes": "teatro bellas artes",
     "teatro-bellas-artes": "teatro bellas artes",
-
     "price": "teatro circo price",
     "circo price": "teatro circo price",
     "teatro circo price": "teatro circo price",
     "teatrocircoprice": "teatro circo price",
-
     "la latina": "teatro la latina",
     "teatro la latina": "teatro la latina",
     "teatrolalatina": "teatro la latina",
     "teatro_la_latina": "teatro la latina",
     "teatro-la-latina": "teatro la latina",
     "latina": "teatro la latina",
-
     "teatroreal": "teatro real",
     "teatro real": "teatro real",
-
     "zarzuela": "teatro de la zarzuela",
     "teatro zarzuela": "teatro de la zarzuela",
     "teatro de la zarzuela": "teatro de la zarzuela",
     "teatrodelazarzuela": "teatro de la zarzuela",
-
     "lazaro galdiano": "museo lazaro galdiano",
     "lázaro galdiano": "museo lazaro galdiano",
     "museo lazaro galdiano": "museo lazaro galdiano",
@@ -322,17 +301,11 @@ SALA_ALIAS = {
     "lazarogaldiano": "museo lazaro galdiano",
     "lazaro_galdiano": "museo lazaro galdiano",
     "lazaro-galdiano": "museo lazaro galdiano",
-
 }
 
 
 SALA_VARIANTES = {
-    "movistar arena": [
-        "movistar arena",
-        "movistararena",
-        "wizink center",
-        "wi zink",
-    ],
+    "movistar arena": ["movistar arena", "movistararena", "wizink center", "wi zink"],
     "auditorio nacional": [
         "auditorio nacional",
         "auditorio nacional de musica",
@@ -343,19 +316,9 @@ SALA_VARIANTES = {
         "sala de camara",
         "sala satelite",
     ],
-    "palacio vistalegre": [
-        "palacio vistalegre",
-        "vistalegre",
-    ],
-    "sala la riviera": [
-        "sala la riviera",
-        "la riviera",
-        "riviera",
-    ],
-    "sala el sol": [
-        "sala el sol",
-        "salaelsol",
-    ],
+    "palacio vistalegre": ["palacio vistalegre", "vistalegre"],
+    "sala la riviera": ["sala la riviera", "la riviera", "riviera"],
+    "sala el sol": ["sala el sol", "salaelsol"],
     "pequeno teatro gran via": [
         "pequeno teatro gran via",
         "pequeno gran via",
@@ -376,27 +339,10 @@ SALA_VARIANTES = {
         "jardiel poncela",
         "sala jardiel poncela",
     ],
-    "teatro espanol": [
-        "teatro espanol",
-        "teatro español",
-        "teatroespanol",
-    ],
-    "ifema madrid": [
-        "ifema",
-        "ifema madrid",
-        "feria de madrid",
-    ],
-    "condeduque madrid": [
-        "condeduque madrid",
-        "condeduque",
-        "contemporanea condeduque",
-    ],
-    "sala villanos": [
-        "sala villanos",
-        "villanos",
-        "salavillanos",
-        "villanosmadrid",
-    ],
+    "teatro espanol": ["teatro espanol", "teatro español", "teatroespanol"],
+    "ifema madrid": ["ifema", "ifema madrid", "feria de madrid"],
+    "condeduque madrid": ["condeduque madrid", "condeduque", "contemporanea condeduque"],
+    "sala villanos": ["sala villanos", "villanos", "salavillanos", "villanosmadrid"],
     "sala galileo galilei": [
         "sala galileo galilei",
         "galileo galilei",
@@ -405,31 +351,10 @@ SALA_VARIANTES = {
         "salagalileo es",
         "galileo madrid",
     ],
-    "sala clamores": [
-        "sala clamores",
-        "clamores",
-        "clamores live",
-    ],
-    "sala nazca": [
-        "sala nazca",
-        "nazca",
-        "nazca conciertos",
-        "salanazcaconciertos",
-    ],
-    "replika teatro": [
-        "replika teatro",
-        "réplika teatro",
-        "replika",
-        "réplika",
-        "replikateatro",
-        "replikateatro com",
-    ],
-    "lab the club": [
-        "lab the club",
-        "labtheclub",
-        "labtheclub com",
-        "www labtheclub com",
-    ],
+    "sala clamores": ["sala clamores", "clamores", "clamores live"],
+    "sala nazca": ["sala nazca", "nazca", "nazca conciertos", "salanazcaconciertos"],
+    "replika teatro": ["replika teatro", "réplika teatro", "replika", "réplika", "replikateatro", "replikateatro com"],
+    "lab the club": ["lab the club", "labtheclub", "labtheclub com", "www labtheclub com"],
     "teatro maria guerrero": [
         "teatro maria guerrero",
         "teatro maría guerrero",
@@ -439,12 +364,7 @@ SALA_VARIANTES = {
         "sala pequena",
         "sala pequeña",
     ],
-    "teatro marquina": [
-        "teatro marquina",
-        "marquina",
-        "grupomarquina",
-        "grupo marquina",
-    ],
+    "teatro marquina": ["teatro marquina", "marquina", "grupomarquina", "grupo marquina"],
     "teatro principe gran via": [
         "teatro principe gran via",
         "teatro príncipe gran vía",
@@ -475,45 +395,18 @@ SALA_VARIANTES = {
         "círculo bellas artes",
         "circulobellasartes",
     ],
-    "teatro lara": [
-        "teatro lara",
-        "teatrolara",
-        "teatrolara com",
-        "sala candido lara",
-        "sala cándido lara",
-        "sala lola membrives",
-    ],
-    "teatro bellas artes": [
-        "teatro bellas artes",
-        "teatrobellasartes",
-        "teatrobellasartes es",
-    ],
-    "teatro circo price": [
-        "teatro circo price",
-        "circo price",
-        "teatrocircoprice",
-        "teatrocircoprice es",
-    ],
-    "teatro la latina": [
-        "teatro la latina",
-        "la latina",
-        "latina",
-        "teatrolalatina",
-    ],
-    "teatro real": [
-        "teatroreal",
-    ],
+    "teatro lara": ["teatro lara", "teatrolara", "teatrolara com", "sala candido lara", "sala cándido lara", "sala lola membrives"],
+    "teatro bellas artes": ["teatro bellas artes", "teatrobellasartes", "teatrobellasartes es"],
+    "teatro circo price": ["teatro circo price", "circo price", "teatrocircoprice", "teatrocircoprice es"],
+    "teatro la latina": ["teatro la latina", "la latina", "latina", "teatrolalatina"],
+    "teatro real": ["teatroreal"],
     "teatro real carlos iii de aranjuez": [
         "teatro real carlos iii de aranjuez",
         "teatro aranjuez",
         "teatroaranjuez",
         "teatro real carlos iii",
     ],
-    "teatro de la zarzuela": [
-        "teatro de la zarzuela",
-        "teatrodelazarzuela",
-        "teatrodelazarzuela inaem gob es",
-    ],
+    "teatro de la zarzuela": ["teatro de la zarzuela", "teatrodelazarzuela", "teatrodelazarzuela inaem gob es"],
     "museo lazaro galdiano": [
         "museo lazaro galdiano",
         "museo lázaro galdiano",
@@ -540,8 +433,6 @@ def coincide_sala(evento, sala):
 
     sala_canonica = obtener_nombre_sala_canonico(sala)
 
-    # Caso especial:
-    # "teatro real" NO debe capturar "Teatro Real Carlos III de Aranjuez".
     if sala_canonica == "teatro real":
         return (
             lugar_norm == "teatro real"
@@ -589,6 +480,41 @@ def filtrar_eventos(eventos, fecha_inicio=None, fecha_fin=None, sala=None, solo_
         resultado.append(evento)
 
     return resultado
+
+
+def buscar_bloque_evergreen(bloques, intencion):
+    intencion_norm = normalizar_texto(intencion)
+
+    return next(
+        (
+            b for b in bloques
+            if normalizar_texto(b.get("intencion")) == intencion_norm
+        ),
+        None
+    )
+
+
+def extraer_items_evergreen(bloque, categoria=None):
+    if not bloque:
+        return []
+
+    categoria_norm = normalizar_texto(categoria) if categoria else None
+    items = []
+
+    for categoria_data in bloque.get("categorias", []) or []:
+        nombre_categoria = categoria_data.get("categoria", "")
+
+        if categoria_norm and normalizar_texto(nombre_categoria) != categoria_norm:
+            continue
+
+        for item in categoria_data.get("items", []) or []:
+            items.append(item)
+
+    return sorted(
+        items,
+        key=lambda x: x.get("score_editorial", 0),
+        reverse=True
+    )
 
 
 @app.get("/")
@@ -663,3 +589,64 @@ def eventos_manana(sala: str = None):
         "total": len(filtrados),
         "eventos": filtrados
     }
+
+
+@app.get("/evergreen")
+def obtener_evergreen():
+    bloques = cargar_evergreen()
+
+    return {
+        "total_bloques": len(bloques),
+        "bloques": bloques
+    }
+
+
+@app.get("/evergreen/{intencion}/top")
+def obtener_top_evergreen_por_intencion(
+    intencion: str,
+    limit: int = 5,
+    categoria: str = None
+):
+    bloques = cargar_evergreen()
+    bloque = buscar_bloque_evergreen(bloques, intencion)
+
+    if not bloque:
+        return {
+            "error": "Intención no encontrada",
+            "intenciones_disponibles": [
+                b.get("intencion") for b in bloques
+            ]
+        }
+
+    if limit < 1:
+        limit = 1
+
+    if limit > 50:
+        limit = 50
+
+    items_ordenados = extraer_items_evergreen(bloque, categoria=categoria)
+
+    return {
+        "intencion": bloque.get("intencion"),
+        "categoria": categoria,
+        "limit": limit,
+        "total_disponibles": len(items_ordenados),
+        "total_devuelto": len(items_ordenados[:limit]),
+        "items": items_ordenados[:limit]
+    }
+
+
+@app.get("/evergreen/{intencion}")
+def obtener_evergreen_por_intencion(intencion: str):
+    bloques = cargar_evergreen()
+    bloque = buscar_bloque_evergreen(bloques, intencion)
+
+    if not bloque:
+        return {
+            "error": "Intención no encontrada",
+            "intenciones_disponibles": [
+                b.get("intencion") for b in bloques
+            ]
+        }
+
+    return bloque

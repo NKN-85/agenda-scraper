@@ -1,0 +1,50 @@
+[
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/excursiones-madrid",
+    "categoria": "excursiones",
+    "max_enlaces": 80
+  },
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/trenes-turisticos",
+    "categoria": "trenes_turisticos",
+    "max_enlaces": 60
+  },
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/rutas-madrid",
+    "categoria": "rutas_madrid",
+    "max_enlaces": 80
+  },
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/tradicion-cultura-madrid",
+    "categoria": "tradicion_cultura",
+    "max_enlaces": 80
+  },
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/barrios-de-madrid",
+    "categoria": "barrios",
+    "max_enlaces": 80
+  },
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/planes-madrid",
+    "categoria": "planes_madrid",
+    "max_enlaces": 80
+  },
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/parques-jardines-madrid",
+    "categoria": "parques_jardines",
+    "max_enlaces": 80
+  },
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/miradores-madrid",
+    "categoria": "miradores",
+    "max_enlaces": 80
+  }
+]

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Query, Response
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Union
 import requests
@@ -11,7 +11,7 @@ from datetime import date, timedelta, datetime
 app = FastAPI(
     title="API Agenda Cultural",
     description="API para consultar eventos de agenda cultural",
-    version="2.4.0",
+    version="2.5.0",
     servers=[
         {
             "url": "https://agenda-api-zpmf.onrender.com",
@@ -492,6 +492,28 @@ SALA_VARIANTES = {
 }
 
 
+TIPO_EVENTO_ALIAS = {
+    "concierto": "concierto",
+    "conciertos": "concierto",
+    "musica": "concierto",
+    "música": "concierto",
+    "teatro": "teatro",
+    "musical": "musical",
+    "musicales": "musical",
+    "exposicion": "exposicion",
+    "exposición": "exposicion",
+    "exposiciones": "exposicion",
+    "taller": "taller",
+    "talleres": "taller",
+    "danza": "danza",
+    "cine": "cine",
+    "comedia": "comedia",
+    "circo": "circo",
+    "deporte": "deporte",
+    "otros": "otros",
+}
+
+
 def obtener_nombre_sala_canonico(sala_usuario):
     s = normalizar_texto(sala_usuario)
     return SALA_ALIAS.get(s)
@@ -538,7 +560,32 @@ def coincide_sala(evento, sala):
     )
 
 
-def filtrar_eventos(eventos, fecha_inicio=None, fecha_fin=None, sala=None, solo_activos=True):
+def normalizar_tipo_evento(tipo_evento):
+    if not tipo_evento:
+        return None
+
+    tipo_norm = normalizar_texto(tipo_evento)
+    return TIPO_EVENTO_ALIAS.get(tipo_norm, tipo_norm)
+
+
+def coincide_tipo_evento(evento, tipo_evento):
+    if not tipo_evento:
+        return True
+
+    tipo_evento_norm = normalizar_tipo_evento(tipo_evento)
+    tipo_evento_actual = normalizar_tipo_evento(evento.get("tipo_evento", ""))
+
+    return tipo_evento_actual == tipo_evento_norm
+
+
+def filtrar_eventos(
+    eventos,
+    fecha_inicio=None,
+    fecha_fin=None,
+    sala=None,
+    tipo_evento=None,
+    solo_activos=True
+):
     resultado = []
 
     for evento in eventos:
@@ -546,6 +593,9 @@ def filtrar_eventos(eventos, fecha_inicio=None, fecha_fin=None, sala=None, solo_
             continue
 
         if not coincide_sala(evento, sala):
+            continue
+
+        if not coincide_tipo_evento(evento, tipo_evento):
             continue
 
         if fecha_inicio and fecha_fin:
@@ -599,21 +649,28 @@ def root():
 
 @app.get("/eventos", response_model=EventosResponse)
 def obtener_eventos(
-    sala: Optional[str] = None,
-    fecha_desde: Optional[str] = None,
-    fecha_hasta: Optional[str] = None
+    sala: Optional[str] = Query(default=None),
+    fecha_desde: Optional[date] = Query(default=None),
+    fecha_hasta: Optional[date] = Query(default=None),
+    tipo_evento: Optional[str] = Query(default=None)
 ):
     eventos = cargar_eventos()
 
-    f_inicio = parse_fecha_iso(fecha_desde) if fecha_desde else None
-    f_fin = parse_fecha_iso(fecha_hasta) if fecha_hasta else None
+    f_inicio = fecha_desde
+    f_fin = fecha_hasta
 
     if f_inicio and not f_fin:
         f_fin = f_inicio
     if f_fin and not f_inicio:
         f_inicio = f_fin
 
-    filtrados = filtrar_eventos(eventos, f_inicio, f_fin, sala=sala)
+    filtrados = filtrar_eventos(
+        eventos,
+        f_inicio,
+        f_fin,
+        sala=sala,
+        tipo_evento=tipo_evento
+    )
 
     return {
         "total": len(filtrados),
@@ -622,7 +679,10 @@ def obtener_eventos(
 
 
 @app.get("/eventos/fin-de-semana", response_model=EventosRangoResponse)
-def eventos_fin_de_semana(sala: Optional[str] = None):
+def eventos_fin_de_semana(
+    sala: Optional[str] = Query(default=None),
+    tipo_evento: Optional[str] = Query(default=None)
+):
     hoy = date.today()
 
     dias_hasta_viernes = (4 - hoy.weekday()) % 7
@@ -630,7 +690,13 @@ def eventos_fin_de_semana(sala: Optional[str] = None):
     domingo = viernes + timedelta(days=2)
 
     eventos = cargar_eventos()
-    filtrados = filtrar_eventos(eventos, viernes, domingo, sala=sala)
+    filtrados = filtrar_eventos(
+        eventos,
+        viernes,
+        domingo,
+        sala=sala,
+        tipo_evento=tipo_evento
+    )
 
     return {
         "desde": viernes.isoformat(),
@@ -641,10 +707,19 @@ def eventos_fin_de_semana(sala: Optional[str] = None):
 
 
 @app.get("/eventos/hoy", response_model=EventosDiaResponse)
-def eventos_hoy(sala: Optional[str] = None):
+def eventos_hoy(
+    sala: Optional[str] = Query(default=None),
+    tipo_evento: Optional[str] = Query(default=None)
+):
     hoy = date.today()
     eventos = cargar_eventos()
-    filtrados = filtrar_eventos(eventos, hoy, hoy, sala=sala)
+    filtrados = filtrar_eventos(
+        eventos,
+        hoy,
+        hoy,
+        sala=sala,
+        tipo_evento=tipo_evento
+    )
 
     return {
         "fecha": hoy.isoformat(),
@@ -654,10 +729,19 @@ def eventos_hoy(sala: Optional[str] = None):
 
 
 @app.get("/eventos/manana", response_model=EventosDiaResponse)
-def eventos_manana(sala: Optional[str] = None):
+def eventos_manana(
+    sala: Optional[str] = Query(default=None),
+    tipo_evento: Optional[str] = Query(default=None)
+):
     manana = date.today() + timedelta(days=1)
     eventos = cargar_eventos()
-    filtrados = filtrar_eventos(eventos, manana, manana, sala=sala)
+    filtrados = filtrar_eventos(
+        eventos,
+        manana,
+        manana,
+        sala=sala,
+        tipo_evento=tipo_evento
+    )
 
     return {
         "fecha": manana.isoformat(),

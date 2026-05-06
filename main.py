@@ -114,6 +114,12 @@ def normalizar_evento_entrada(evento):
             "fechas_funcion": info_fecha.get("fechas_funcion", []),
             "dias_semana": info_fecha.get("dias_semana", []),
             "texto_fecha_original": info_fecha.get("texto_fecha_original", ""),
+            "tipo_evento": evento.get("tipo_evento"),
+            "tags": evento.get("tags", []),
+            "estado": evento.get("estado"),
+            "first_seen": evento.get("first_seen"),
+            "last_seen": evento.get("last_seen"),
+            "enriched": evento.get("enriched"),
         }
 
     return fila_antigua_a_evento_dict(evento)
@@ -157,6 +163,8 @@ def guardar_csv(eventos, nombre_archivo="eventos.csv"):
             "FECHAS_FUNCION",
             "DIAS_SEMANA",
             "TEXTO_FECHA_ORIGINAL",
+            "TIPO_EVENTO",
+            "TAGS",
         ])
 
         for evento in eventos:
@@ -173,6 +181,8 @@ def guardar_csv(eventos, nombre_archivo="eventos.csv"):
                 ",".join(evento.get("fechas_funcion", [])),
                 ",".join(str(x) for x in evento.get("dias_semana", [])),
                 evento.get("texto_fecha_original", ""),
+                evento.get("tipo_evento", ""),
+                ",".join(evento.get("tags", [])),
             ])
 
 
@@ -197,6 +207,8 @@ def eventos_a_json(eventos):
             "fechas_funcion": normalizado.get("fechas_funcion", []),
             "dias_semana": normalizado.get("dias_semana", []),
             "texto_fecha_original": normalizado.get("texto_fecha_original", ""),
+            "tipo_evento": normalizado.get("tipo_evento"),
+            "tags": normalizado.get("tags", []),
         })
 
     return eventos_json
@@ -227,12 +239,9 @@ def clave_evento_json(evento):
     lugar = (evento.get("lugar", "") or "").strip().lower()
     titulo = (evento.get("titulo", "") or "").strip().lower()
 
-    # Para fichas únicas tipo Teatro Real:
-    # evita duplicados si cambia el lugar entre "Teatro Real" y "Teatro Real - Sala Principal".
     if url and "/espectaculo/" in url:
         return (url,)
 
-    # Resto de salas: no fusiona eventos distintos que comparten URL genérica.
     return (url, lugar, titulo)
 
 
@@ -270,9 +279,9 @@ def clave_orden_fecha(evento):
 
 
 def clasificar_tipo_evento(evento):
-    titulo = evento.get("titulo", "").lower()
-    lugar = evento.get("lugar", "").lower()
-    fuente = evento.get("fuente", "").lower()
+    titulo = (evento.get("titulo", "") or "").lower()
+    lugar = (evento.get("lugar", "") or "").lower()
+    fuente = (evento.get("fuente", "") or "").lower()
 
     texto = f"{titulo} {lugar} {fuente}"
 
@@ -340,8 +349,8 @@ def clasificar_tipo_evento(evento):
 
 
 def generar_tags(evento, tipo_evento):
-    titulo = evento.get("titulo", "").lower()
-    lugar = evento.get("lugar", "").lower()
+    titulo = (evento.get("titulo", "") or "").lower()
+    lugar = (evento.get("lugar", "") or "").lower()
 
     tags = set()
     tags.add(tipo_evento)
@@ -677,14 +686,16 @@ def actualizar_evento_existente(evento_master, evento_actual):
         evento_master.get("texto_fecha_original", "")
     )
 
+    tipo_evento = clasificar_tipo_evento(evento_actual)
+    evento_master["tipo_evento"] = tipo_evento
+    evento_master["tags"] = generar_tags(evento_actual, tipo_evento)
+
     evento_master["last_seen"] = ahora
     evento_master["estado"] = "activo"
     evento_master["enriched"] = True
 
-    if "tipo_evento" not in evento_master:
-        tipo_evento = clasificar_tipo_evento(evento_actual)
-        evento_master["tipo_evento"] = tipo_evento
-        evento_master["tags"] = generar_tags(evento_actual, tipo_evento)
+    if "first_seen" not in evento_master:
+        evento_master["first_seen"] = ahora
 
     return evento_master
 
@@ -792,6 +803,12 @@ def main():
         try:
             eventos = funcion()
             eventos = limpiar_eventos(eventos)
+
+            for evento in eventos:
+                tipo_evento = clasificar_tipo_evento(evento)
+                evento["tipo_evento"] = tipo_evento
+                evento["tags"] = generar_tags(evento, tipo_evento)
+
             todos_los_eventos.extend(eventos)
             print(f"[OK] {funcion.__name__}: {len(eventos)} eventos")
         except Exception as e:

@@ -11,7 +11,7 @@ from datetime import date, timedelta, datetime
 app = FastAPI(
     title="API Agenda Cultural",
     description="API para consultar eventos de agenda cultural",
-    version="2.5.0",
+    version="2.6.0",
     servers=[
         {
             "url": "https://agenda-api-zpmf.onrender.com",
@@ -28,6 +28,8 @@ class RootResponse(BaseModel):
 
 class EventosResponse(BaseModel):
     total: int
+    limit: int
+    offset: int
     eventos: List[Dict[str, Any]]
 
 
@@ -607,6 +609,25 @@ def filtrar_eventos(
     return resultado
 
 
+def paginar_eventos(eventos, limit=30, offset=0):
+    if limit is None:
+        limit = 30
+
+    if offset is None:
+        offset = 0
+
+    if limit < 1:
+        limit = 1
+
+    if limit > 200:
+        limit = 200
+
+    if offset < 0:
+        offset = 0
+
+    return eventos[offset:offset + limit], limit, offset
+
+
 def buscar_bloque_evergreen(bloques, intencion):
     intencion_norm = normalizar_texto(intencion)
 
@@ -652,7 +673,9 @@ def obtener_eventos(
     sala: Optional[str] = Query(default=None),
     fecha_desde: Optional[date] = Query(default=None),
     fecha_hasta: Optional[date] = Query(default=None),
-    tipo_evento: Optional[str] = Query(default=None)
+    tipo_evento: Optional[str] = Query(default=None),
+    limit: int = Query(default=30, ge=1, le=200),
+    offset: int = Query(default=0, ge=0)
 ):
     eventos = cargar_eventos()
 
@@ -672,9 +695,17 @@ def obtener_eventos(
         tipo_evento=tipo_evento
     )
 
+    pagina, limit_final, offset_final = paginar_eventos(
+        filtrados,
+        limit=limit,
+        offset=offset
+    )
+
     return {
         "total": len(filtrados),
-        "eventos": filtrados
+        "limit": limit_final,
+        "offset": offset_final,
+        "eventos": pagina
     }
 
 

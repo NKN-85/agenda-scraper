@@ -83,6 +83,53 @@ class EvergreenTopResponse(BaseModel):
     items: List[EvergreenItem]
 
 
+class EvergreenSearchResponse(BaseModel):
+    q: Optional[str] = None
+    intencion: Optional[str] = None
+    categoria: Optional[str] = None
+    total: int
+    total_devuelto: int
+    limit: int
+    offset: int
+    items: List[EvergreenItem]
+
+
+class EvergreenIntencionesResponse(BaseModel):
+    total: int
+    intenciones: List[str]
+
+
+class EvergreenCategoriasResponse(BaseModel):
+    total: int
+    intencion: Optional[str] = None
+    categorias: List[str]
+
+
+class EvergreenResumenCategoria(BaseModel):
+    categoria: str
+    total_items: int
+
+
+class EvergreenResumenBloque(BaseModel):
+    intencion: str
+    total_items: int
+    categorias: List[EvergreenResumenCategoria]
+
+
+class EvergreenResumenResponse(BaseModel):
+    total_bloques: int
+    total_items: int
+    bloques: List[EvergreenResumenBloque]
+
+
+class EvergreenRandomResponse(BaseModel):
+    intencion: Optional[str] = None
+    categoria: Optional[str] = None
+    total_disponibles: int
+    total_devuelto: int
+    items: List[EvergreenItem]
+
+
 class ErrorResponse(BaseModel):
     error: str
     intenciones_disponibles: List[str]
@@ -642,6 +689,105 @@ def extraer_items_evergreen(bloque, categoria=None):
     )
 
 
+def paginar_items(items, limit=10, offset=0, max_limit=50):
+    if limit < 1:
+        limit = 1
+    if limit > max_limit:
+        limit = max_limit
+    if offset < 0:
+        offset = 0
+
+    return items[offset:offset + limit], limit, offset
+
+
+def texto_evergreen_busqueda(item):
+    campos = [
+        item.get("titulo"),
+        item.get("descripcion"),
+        item.get("fuente"),
+        item.get("categoria"),
+        item.get("intencion"),
+        item.get("url")
+    ]
+    return normalizar_texto(" ".join(str(c or "") for c in campos))
+
+
+def listar_intenciones_evergreen(bloques):
+    return sorted(
+        {
+            bloque.get("intencion")
+            for bloque in bloques
+            if bloque.get("intencion")
+        }
+    )
+
+
+def listar_categorias_evergreen(bloques, intencion=None):
+    intencion_norm = normalizar_texto(intencion) if intencion else None
+    categorias = set()
+
+    for bloque in bloques:
+        if intencion_norm and normalizar_texto(bloque.get("intencion")) != intencion_norm:
+            continue
+
+        for categoria_data in bloque.get("categorias", []) or []:
+            categoria = categoria_data.get("categoria")
+            if categoria:
+                categorias.add(categoria)
+
+    return sorted(categorias)
+
+
+def extraer_todos_items_evergreen(bloques, intencion=None, categoria=None):
+    intencion_norm = normalizar_texto(intencion) if intencion else None
+    categoria_norm = normalizar_texto(categoria) if categoria else None
+    items = []
+
+    for bloque in bloques:
+        if intencion_norm and normalizar_texto(bloque.get("intencion")) != intencion_norm:
+            continue
+
+        for categoria_data in bloque.get("categorias", []) or []:
+            nombre_categoria = categoria_data.get("categoria", "")
+
+            if categoria_norm and normalizar_texto(nombre_categoria) != categoria_norm:
+                continue
+
+            for item in categoria_data.get("items", []) or []:
+                items.append(item)
+
+    return sorted(
+        items,
+        key=lambda x: x.get("score_editorial", 0),
+        reverse=True
+    )
+
+
+def construir_resumen_evergreen(bloques):
+    resumen = []
+    total_items = 0
+
+    for bloque in bloques:
+        categorias = []
+
+        for categoria_data in bloque.get("categorias", []) or []:
+            total_categoria = int(categoria_data.get("total_items", 0) or 0)
+            total_items += total_categoria
+
+            categorias.append({
+                "categoria": categoria_data.get("categoria", ""),
+                "total_items": total_categoria
+            })
+
+        resumen.append({
+            "intencion": bloque.get("intencion", ""),
+            "total_items": int(bloque.get("total_items", 0) or 0),
+            "categorias": categorias
+        })
+
+    return resumen, total_items
+
+
 @app.get("/", response_model=RootResponse)
 def root():
     return {"ok": True, "servicio": "API Agenda Cultural"}
@@ -757,6 +903,111 @@ def obtener_evergreen():
     return {
         "total_bloques": len(bloques),
         "bloques": bloques
+    }
+
+
+@app.get("/evergreen/resumen", response_model=EvergreenResumenResponse)
+def obtener_resumen_evergreen():
+    bloques = cargar_evergreen()
+    resumen, total_items = construir_resumen_evergreen(bloques)
+
+    return {
+        "total_bloques": len(bloques),
+        "total_items": total_items,
+        "bloques": resumen
+    }
+
+
+@app.get("/evergreen/intenciones", response_model=EvergreenIntencionesResponse)
+def obtener_intenciones_evergreen():
+    bloques = cargar_evergreen()
+    intenciones = listar_intenciones_evergreen(bloques)
+
+    return {
+        "total": len(intenciones),
+        "intenciones": intenciones
+    }
+
+
+@app.get("/evergreen/categorias", response_model=EvergreenCategoriasResponse)
+def obtener_categorias_evergreen(
+    intencion: Optional[str] = Query(default=None)
+):
+    bloques = cargar_evergreen()
+    categorias = listar_categorias_evergreen(bloques, intencion=intencion)
+
+    return {
+        "total": len(categorias),
+        "intencion": intencion,
+        "categorias": categorias
+    }
+
+
+@app.get("/evergreen/buscar", response_model=EvergreenSearchResponse)
+def buscar_evergreen(
+    q: Optional[str] = Query(default=None),
+    intencion: Optional[str] = Query(default=None),
+    categoria: Optional[str] = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=50),
+    offset: int = Query(default=0, ge=0)
+):
+    bloques = cargar_evergreen()
+
+    items = extraer_todos_items_evergreen(
+        bloques,
+        intencion=intencion,
+        categoria=categoria
+    )
+
+    if q:
+        q_norm = normalizar_texto(q)
+        items = [
+            item for item in items
+            if q_norm in texto_evergreen_busqueda(item)
+        ]
+
+    pagina, limit, offset = paginar_items(
+        items,
+        limit=limit,
+        offset=offset,
+        max_limit=50
+    )
+
+    return {
+        "q": q,
+        "intencion": intencion,
+        "categoria": categoria,
+        "total": len(items),
+        "total_devuelto": len(pagina),
+        "limit": limit,
+        "offset": offset,
+        "items": pagina
+    }
+
+
+@app.get("/evergreen/random", response_model=EvergreenRandomResponse)
+def obtener_evergreen_random(
+    intencion: Optional[str] = Query(default=None),
+    categoria: Optional[str] = Query(default=None),
+    limit: int = Query(default=5, ge=1, le=20)
+):
+    import random
+
+    bloques = cargar_evergreen()
+    items = extraer_todos_items_evergreen(
+        bloques,
+        intencion=intencion,
+        categoria=categoria
+    )
+
+    seleccion = random.sample(items, min(limit, len(items))) if items else []
+
+    return {
+        "intencion": intencion,
+        "categoria": categoria,
+        "total_disponibles": len(items),
+        "total_devuelto": len(seleccion),
+        "items": seleccion
     }
 
 

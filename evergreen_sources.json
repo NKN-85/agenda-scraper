@@ -3,48 +3,386 @@
     "fuente": "esmadrid",
     "url": "https://www.esmadrid.com/excursiones-madrid",
     "categoria": "excursiones",
-    "max_enlaces": 80
+    "intencion": "viaje",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']"
   },
   {
     "fuente": "esmadrid",
     "url": "https://www.esmadrid.com/trenes-turisticos",
     "categoria": "trenes_turisticos",
-    "max_enlaces": 60
+    "intencion": "viaje",
+    "max_enlaces": 60,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']"
   },
   {
     "fuente": "esmadrid",
     "url": "https://www.esmadrid.com/rutas-madrid",
     "categoria": "rutas_madrid",
-    "max_enlaces": 80
+    "intencion": "rutas",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']"
   },
   {
     "fuente": "esmadrid",
     "url": "https://www.esmadrid.com/tradicion-cultura-madrid",
     "categoria": "tradicion_cultura",
-    "max_enlaces": 80
+    "intencion": "cultura",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']"
   },
   {
     "fuente": "esmadrid",
     "url": "https://www.esmadrid.com/barrios-de-madrid",
     "categoria": "barrios",
-    "max_enlaces": 80
+    "intencion": "barrios",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']"
   },
   {
     "fuente": "esmadrid",
     "url": "https://www.esmadrid.com/planes-madrid",
     "categoria": "planes_madrid",
-    "max_enlaces": 80
+    "intencion": "ocio",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']"
   },
   {
     "fuente": "esmadrid",
     "url": "https://www.esmadrid.com/parques-jardines-madrid",
     "categoria": "parques_jardines",
-    "max_enlaces": 80
+    "intencion": "naturaleza",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']"
   },
   {
     "fuente": "esmadrid",
     "url": "https://www.esmadrid.com/miradores-madrid",
     "categoria": "miradores",
-    "max_enlaces": 80
-  }
+    "intencion": "naturaleza",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']"
+  },
+  {
+    "fuente": "esmadrid",
+    "url": "https://www.esmadrid.com/informacion-turistica/busqueda?items_per_page=20&text=&sort_bef_combine=search_api_relevance%20ASC&sort_order=ASC&sort_by=search_api_relevance&page=1&mefibs-form-page-items-sort_bef_combine=search_api_relevance%20ASC&mefibs-form-page-items-items_per_page=20&mefibs-form-page-items-mefibs_block_id=page_items",
+    "categoria": "edificios_historicos",
+    "intencion": "monumentos",
+    "max_enlaces":180,
+    "max_fichas": 180,
+    "paginas": 20,
+    "page_start": 1,
+    "page_param": "page",
+    "selector_links": ".view-content a[href], .views-row a[href], a[href]",
+    "filtro_listado_tipo_texto": "Edificios y monumentos",
+    "filtro_ficha_tipo_texto": "Edificios y monumentos",
+    "score_minimo": 35,
+    "timeout": 40,
+    "timeout_ficha": 25,
+    "dominios_permitidos": [
+      "www.esmadrid.com"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']",
+    "patrones_validos": [
+      "/informacion-turistica/"
+    ],
+    "excluir_urls": [
+      "agenda",
+      "contacto",
+      "politica",
+      "cookies",
+      "newsletter",
+      "mapa-web",
+      "aviso-legal",
+      "madrid-city-card",
+      "madrid-util",
+      "transporte",
+      "como-llegar",
+      "donde-dormir",
+      "atencion-visitante",
+      "mapas-y-guias",
+      "busqueda?"
+    ]
+  },
+  {
+    "fuente": "madrid_film_office",
+    "url": "https://madridfilmoffice.com/localizacion-cat/edificios-historicos/",
+    "categoria": "edificios_historicos",
+    "intencion": "monumentos",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "madridfilmoffice.com"
+    ],
+    "patrones_validos": [
+      "/localizacion/"
+    ],
+    "excluir_urls": [
+      "/en/",
+      "/contacto",
+      "/privacy-policy",
+      "/cookies",
+      "/politica",
+      "/aviso-legal",
+      "/legal",
+      "/feed",
+      "/author/",
+      "/tag/"
+    ]
+  },
+  {
+    "fuente": "patrimonio_paisaje_madrid",
+    "url": "https://patrimonioypaisaje.madrid.es/sites/v/index.jsp?vgnextoid=83bc3cb702aa4510VgnVCM1000008a4a900aRCRD&buscar=true&text=&tipoInstalacion=&tipo=&periodoLow=&periodoHigh=&distrito=&direccion=",
+    "categoria": "edificios_historicos",
+    "intencion": "monumentos",
+    "max_enlaces": 300,
+    "timeout": 30,
+    "dominios_permitidos": [
+      "patrimonioypaisaje.madrid.es"
+    ],
+    "patrones_validos": [
+      "/portales/monumenta/es/Monumentos-y-Edificios-Singulares/Edificios-singulares/"
+    ],
+    "excluir_urls": [
+      "Mapa-Web",
+      "Contactar",
+      "Aviso-legal",
+      "Politica",
+      "Cookies",
+      "Accesibilidad",
+      "RSS",
+      "sedelectronica",
+      "portal-transparencia",
+      "Perfil-del-contratante",
+      "tramites",
+      "gestiones",
+      "publicidad",
+      "newsletter",
+      "javascript:",
+      "#"
+    ]
+  },
+  {
+    "fuente": "turismo_alcala",
+    "url": "https://www.turismoalcala.es/museos-y-monumentos/",
+    "categoria": "edificios_historicos",
+    "intencion": "monumentos",
+    "max_enlaces": 80,
+    "dominios_permitidos": [
+      "www.turismoalcala.es"
+    ],
+    "patrones_validos": [
+      "/turismo/"
+    ],
+    "excluir_urls": [
+      "/en/",
+      "/fr/",
+      "horarios",
+      "aviso-legal",
+      "politica",
+      "cookies",
+      "contacto",
+      "hoteles",
+      "eventos",
+      "gastronomia",
+      "tienda",
+      "planos",
+      "guias",
+      "como-llegar",
+      "donde-aparcar",
+      "visitas-guiadas",
+      "incentivos",
+      "alcala-para-ninos",
+      "ruta-cervantina",
+      "ruta-cisneros"
+    ]
+  },
+  {
+    "fuente": "turismo_castilla_la_mancha",
+    "url": "https://www.turismocastillalamancha.es/es/cultura-y-patrimonio/castillos",
+    "categoria": "castillos_clm",
+    "intencion": "castillos",
+    "max_enlaces": 120,
+    "max_fichas": 80,
+    "paginas": 20,
+    "page_start": 2,
+    "page_step": 1,
+    "page_param": "pagination",
+    "selector_links": "h2 a[href], h3 a[href]",
+    "score_minimo": 35,
+    "timeout": 20,
+    "timeout_ficha": 12,
+    "dominios_permitidos": [
+      "www.turismocastillalamancha.es"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']",
+    "patrones_validos": [
+      "/es/cultura-y-patrimonio/castillos/"
+    ],
+    "excluir_urls": [
+      "/fr/",
+      "/en/",
+      "/de/",
+      "/it/",
+      "/pt/",
+      "/contacto",
+      "/cookies",
+      "/aviso-legal",
+      "/politica",
+      "/newsletter",
+      "/agenda",
+      "/buscar",
+      "/mapa-web",
+      "/planifica",
+      "#"
+    ]
+  },
+  {
+    "fuente": "turismo_castilla_la_mancha",
+    "url": "https://www.turismocastillalamancha.es/es/cultura-y-patrimonio/rutas",
+    "categoria": "rutas_historicas_clm",
+    "intencion": "rutas",
+    "max_enlaces": 120,
+    "max_fichas": 80,
+    "paginas": 8,
+    "page_start": 8,
+    "page_param": "page",
+    "selector_links": "a[href]",
+    "score_minimo": 35,
+    "timeout": 20,
+    "timeout_ficha": 12,
+    "dominios_permitidos": [
+      "www.turismocastillalamancha.es"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']",
+    "patrones_validos": [
+      "/es/cultura-y-patrimonio/rutas/"
+    ],
+    "excluir_urls": [
+      "/fr/",
+      "/en/",
+      "/de/",
+      "/it/",
+      "/pt/",
+      "/contacto",
+      "/cookies",
+      "/aviso-legal",
+      "/politica",
+      "/newsletter",
+      "/agenda",
+      "/buscar",
+      "/mapa-web",
+      "/planifica",
+      "#"
+    ]
+  },
+  {
+    "fuente": "turismo_castilla_la_mancha",
+    "url": "https://www.turismocastillalamancha.es/es/cultura-y-patrimonio/arqueologia",
+    "categoria": "arqueologia_clm",
+    "intencion": "yacimientos",
+    "max_enlaces": 120,
+    "max_fichas": 80,
+    "paginas": 20,
+    "page_start": 2,
+    "page_step": 1,
+    "page_param": "pagination",
+    "selector_links": "h2 a[href], h3 a[href]",
+    "score_minimo": 35,
+    "timeout": 20,
+    "timeout_ficha": 12,
+    "dominios_permitidos": [
+      "www.turismocastillalamancha.es"
+    ],
+    "selector_titulo": "h1",
+    "selector_descripcion": "meta[name='description']",
+    "patrones_validos": [
+      "/es/cultura-y-patrimonio/arqueologia/"
+    ],
+    "excluir_urls": [
+      "/fr/",
+      "/en/",
+      "/de/",
+      "/it/",
+      "/pt/",
+      "/contacto",
+      "/cookies",
+      "/aviso-legal",
+      "/politica",
+      "/newsletter",
+      "/agenda",
+      "/buscar",
+      "/mapa-web",
+      "/planifica",
+      "#"
+    ]
+  },
+  {
+  "fuente": "turismo_extremadura",
+  "url": "https://www.turismoextremadura.com/es/explora/extremadura-imprescindible/",
+  "categoria": "imprescindibles_extremadura",
+  "intencion": "viaje",
+  "max_enlaces": 80,
+  "max_fichas": 80,
+  "score_minimo": 35,
+  "timeout": 20,
+  "timeout_ficha": 12,
+  "dominios_permitidos": [
+    "www.turismoextremadura.com"
+  ],
+  "selector_links": "h2 a[href], h3 a[href], .views-row a[href], .item a[href]",
+  "selector_titulo": "h1",
+  "selector_descripcion": "meta[name='description']",
+  "patrones_validos": [
+    "/es/explora/"
+  ],
+  "excluir_urls": [
+    "/en/",
+    "/fr/",
+    "/pt/",
+    "/de/",
+    "/contacto",
+    "/privacidad",
+    "/aviso-legal",
+    "/accesibilidad",
+    "/mapa-del-sitio",
+    "/apps",
+    "/observatorio",
+    "#"
+  ]
+}
 ]

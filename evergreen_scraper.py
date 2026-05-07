@@ -2,8 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import hashlib
+import html
+import time
 from collections import defaultdict
-from urllib.parse import urljoin, urldefrag
+from urllib.parse import urljoin, urldefrag, urlparse, urlsplit, urlunsplit
 from datetime import datetime
 
 BASE_URL = "https://www.esmadrid.com"
@@ -122,7 +124,11 @@ INTENCION_MAP = {
     "barrios": "barrios",
     "planes_madrid": "ocio",
     "parques_jardines": "naturaleza",
-    "miradores": "naturaleza"
+    "miradores": "naturaleza",
+    "edificios_historicos": "cultura",
+    "arqueologia_clm": "cultura",
+    "rutas_historicas_clm": "cultura",
+    "castillos_clm": "cultura"
 }
 
 URLS_INDICE = {
@@ -176,7 +182,8 @@ KEYWORDS_EXCLUIR = [
     "dónde dormir",
     "donde dormir",
     "información turística",
-    "informacion turistica"
+    "informacion turistica",
+    "crea tu itinerario"
 ]
 
 URLS_EXCLUIR = [
@@ -302,9 +309,22 @@ def mapear_intencion(categoria):
 
 
 def limpiar_url(url, base_url):
+    url = html.unescape(url)
     url = urljoin(base_url, url)
     url, _ = urldefrag(url)
-    return url.rstrip("/")
+
+    partes = urlsplit(url)
+
+    netloc = partes.netloc.lower()
+    path = partes.path.rstrip("/") or "/"
+
+    return urlunsplit((
+        partes.scheme,
+        netloc,
+        path,
+        partes.query,
+        ""
+    ))
 
 
 def cargar_sources():
@@ -347,7 +367,19 @@ def es_titulo_valido(titulo):
     return True
 
 
-def obtener_descripcion(soup):
+def obtener_descripcion(soup, source=None):
+    source = source or {}
+    selector = source.get("selector_descripcion")
+
+    if selector:
+        nodo = soup.select_one(selector)
+        if nodo:
+            if nodo.name == "meta" and nodo.get("content"):
+                return nodo["content"].strip()
+            texto = nodo.get_text(" ", strip=True)
+            if texto:
+                return texto
+
     meta = soup.select_one('meta[name="description"]')
     if meta and meta.get("content"):
         return meta["content"].strip()
@@ -359,7 +391,17 @@ def obtener_descripcion(soup):
     return ""
 
 
-def obtener_titulo_real(soup, fallback):
+def obtener_titulo_real(soup, fallback, source=None):
+    source = source or {}
+    selector = source.get("selector_titulo")
+
+    if selector:
+        nodo = soup.select_one(selector)
+        if nodo:
+            texto = nodo.get_text(" ", strip=True)
+            if texto:
+                return texto
+
     h1 = soup.select_one("h1")
     if h1:
         texto = h1.get_text(" ", strip=True)
@@ -452,53 +494,478 @@ def score_editorial(item):
     return min(max(score, 0), 100)
 
 
+
+def construir_url_pagina(url, numero_pagina, page_param="page"):
+    from urllib.parse import parse_qsl, urlencode
+
+    partes = urlsplit(url)
+    query = dict(parse_qsl(partes.query, keep_blank_values=True))
+    query[page_param] = str(numero_pagina)
+    nueva_query = urlencode(query, doseq=True)
+
+    return urlunsplit((
+        partes.scheme,
+        partes.netloc,
+        partes.path,
+        nueva_query,
+        partes.fragment
+    ))
+
+
+def obtener_urls_indice(source):
+    url = source["url"]
+    paginas = int(source.get("paginas", 1) or 1)
+    page_start = int(source.get("page_start", 0) or 0)
+    page_param = source.get("page_param", "page")
+    page_step = int(source.get("page_step", 1) or 1)
+
+    if paginas <= 1:
+        return [url]
+
+    urls = []
+
+    for i in range(paginas):
+        numero_pagina = page_start + (i * page_step)
+
+        if page_param == "pagination" and numero_pagina <= 0:
+            if i == 0:
+                urls.append(url)
+            continue
+
+        urls.append(construir_url_pagina(url, numero_pagina, page_param))
+
+    return list(dict.fromkeys(urls))
+
+
+def obtener_dominios_permitidos(source):
+    dominios = source.get("dominios_permitidos")
+    if dominios:
+        return set(dominios)
+
+    parsed = urlparse(source["url"])
+    return {parsed.netloc.lower()}
+
+
+def es_url_valida_source(url, source):
+    categoria = source["categoria"]
+    parsed = urlparse(url)
+
+    if parsed.netloc.lower() not in obtener_dominios_permitidos(source):
+        return False
+
+    if url in URLS_INDICE:
+        return False
+
+    excluir_urls = list(URLS_EXCLUIR)
+    excluir_urls.extend(source.get("excluir_urls", []) or [])
+
+    if any(x in url for x in excluir_urls):
+        return False
+
+    patrones = source.get("patrones_validos") or PATRONES_VALIDOS.get(categoria, [])
+
+    if not patrones:
+        return True
+
+    return any(patron in url for patron in patrones)
+
+
+def obtener_filtro_listado_href(source):
+    filtro = (
+        source.get("filtro_listado_href")
+        or source.get("filtro_card_href")
+        or source.get("filtro_taxonomia_href")
+    )
+
+    if filtro:
+        return filtro
+
+    filtro_texto = (source.get("filtro_ficha_texto") or "").strip().lower()
+
+    if filtro_texto == "edificios y monumentos":
+        return "/taxonomy/term/7173"
+
+    return None
+
+
+def obtener_filtro_listado_texto(source):
+    return (
+        source.get("filtro_listado_texto")
+        or source.get("filtro_card_texto")
+        or source.get("filtro_ficha_texto")
+    )
+
+
+def nodo_contiene_href(nodo, href_parcial):
+    if not href_parcial:
+        return True
+
+    for a in nodo.select("a[href]"):
+        href = html.unescape(a.get("href", ""))
+        if href_parcial in href:
+            return True
+
+    return False
+
+
+def nodo_contiene_texto(nodo, texto):
+    if not texto:
+        return True
+
+    texto_nodo = nodo.get_text(" ", strip=True).lower()
+    return texto.lower() in texto_nodo
+
+
+def anchor_cumple_filtro_listado(anchor, source):
+    filtro_href = obtener_filtro_listado_href(source)
+    filtro_texto = obtener_filtro_listado_texto(source)
+
+    if not filtro_href and not filtro_texto:
+        return True
+
+    max_ancestros = int(source.get("max_ancestros_card", 8) or 8)
+
+    nodo = anchor
+
+    for _ in range(max_ancestros + 1):
+        if not nodo or getattr(nodo, "name", None) in {"html", "body"}:
+            break
+
+        if nodo_contiene_href(nodo, filtro_href) and nodo_contiene_texto(nodo, filtro_texto):
+            return True
+
+        nodo = nodo.parent
+
+    return False
+
+
+def ficha_cumple_filtro(ficha_soup, source):
+    filtro_selector = source.get("filtro_ficha_selector")
+    filtro_href = source.get("filtro_ficha_href")
+    filtro_texto = source.get("filtro_ficha_texto")
+
+    if filtro_selector:
+        nodos = ficha_soup.select(filtro_selector)
+        if not nodos:
+            return False
+
+        if filtro_texto:
+            return any(nodo_contiene_texto(nodo, filtro_texto) for nodo in nodos)
+
+        return True
+
+    if filtro_href:
+        return nodo_contiene_href(ficha_soup, filtro_href)
+
+    if filtro_texto:
+        texto = ficha_soup.get_text(" ", strip=True).lower()
+        return filtro_texto.lower() in texto
+
+    return True
+
+
+
+def normalizar_href_taxonomia(href):
+    href = html.unescape(href or "")
+    href, _ = urldefrag(href)
+    return href.rstrip("/")
+
+
+def soup_tiene_taxonomia_exacta(soup, taxonomia_href):
+    if not taxonomia_href:
+        return True
+
+    taxonomia_href = normalizar_href_taxonomia(taxonomia_href)
+
+    for a in soup.select("div.field-item a[href], a[href]"):
+        href = normalizar_href_taxonomia(a.get("href", ""))
+
+        if href == taxonomia_href:
+            return True
+
+        if href.startswith("http"):
+            parsed = urlparse(href)
+            href_path = parsed.path.rstrip("/")
+            if href_path == taxonomia_href:
+                return True
+
+    return False
+
+
+
+def obtener_tipo_principal_ficha(ficha_soup):
+    selectors = [
+        ".field-name-field-tipo",
+        ".field--name-field-tipo",
+        ".field-name-field-type",
+        ".field--name-field-type"
+    ]
+
+    for selector in selectors:
+        bloque = ficha_soup.select_one(selector)
+        if not bloque:
+            continue
+
+        enlaces = [
+            a.get_text(" ", strip=True)
+            for a in bloque.select("a")
+            if a.get_text(" ", strip=True)
+        ]
+
+        if enlaces:
+            return enlaces[0]
+
+        textos = [
+            texto.strip()
+            for texto in bloque.stripped_strings
+            if texto.strip()
+        ]
+
+        textos_limpios = [
+            texto
+            for texto in textos
+            if texto.lower() not in {"tipo", "tipo:"}
+        ]
+
+        if textos_limpios:
+            return textos_limpios[0]
+
+    for bloque in ficha_soup.select(".field, .field-item, .field__item"):
+        texto_bloque = bloque.get_text(" ", strip=True).lower()
+        if "tipo" not in texto_bloque:
+            continue
+
+        for a in bloque.select("a"):
+            texto = a.get_text(" ", strip=True)
+            if texto:
+                return texto
+
+    lineas = [
+        linea.strip()
+        for linea in ficha_soup.get_text("\n", strip=True).splitlines()
+        if linea.strip()
+    ]
+
+    inicio = 0
+    for i, linea in enumerate(lineas):
+        if linea.lower() in {"datos de interés", "datos de interes"}:
+            inicio = i
+            break
+
+    fin = len(lineas)
+    cortes = {
+        "cerca",
+        "te interesara",
+        "te interesará",
+        "descubre el barrio",
+        "productos oficiales",
+        "publicidad"
+    }
+
+    for i in range(inicio + 1, len(lineas)):
+        if lineas[i].strip().lower() in cortes:
+            fin = i
+            break
+
+    bloque = lineas[inicio:fin]
+
+    for i, linea in enumerate(bloque):
+        if linea.strip().lower() in {"tipo", "tipo:"}:
+            for siguiente in bloque[i + 1:]:
+                valor = siguiente.strip()
+                if valor:
+                    return valor
+
+    return ""
+
+
+def ficha_cumple_tipo_principal(ficha_soup, tipo_esperado):
+    if not tipo_esperado:
+        return True
+
+    tipo_real = obtener_tipo_principal_ficha(ficha_soup)
+
+    if not tipo_real:
+        return False
+
+    return tipo_real.strip().lower() == tipo_esperado.strip().lower()
+
+def ficha_cumple_filtro_estricto(ficha_soup, source):
+    tipo_esperado = source.get("filtro_ficha_tipo_texto")
+
+    if tipo_esperado:
+        return ficha_cumple_tipo_principal(ficha_soup, tipo_esperado)
+
+    taxonomia_href = source.get("filtro_ficha_taxonomia_href")
+
+    if taxonomia_href:
+        return soup_tiene_taxonomia_exacta(ficha_soup, taxonomia_href)
+
+
+    filtro_selector = source.get("filtro_ficha_selector")
+    filtro_href = source.get("filtro_ficha_href")
+    filtro_texto = source.get("filtro_ficha_texto")
+
+    if filtro_selector:
+        nodos = ficha_soup.select(filtro_selector)
+        if not nodos:
+            return False
+
+        if filtro_href:
+            return any(nodo_contiene_href(nodo, filtro_href) for nodo in nodos)
+
+        if filtro_texto:
+            return any(nodo_contiene_texto(nodo, filtro_texto) for nodo in nodos)
+
+        return True
+
+    if filtro_href:
+        return nodo_contiene_href(ficha_soup, filtro_href)
+
+    if filtro_texto:
+        texto = ficha_soup.get_text(" ", strip=True).lower()
+        return filtro_texto.lower() in texto
+
+    return True
+
+
+def source_exige_filtro_ficha(source):
+    return any([
+        source.get("filtro_ficha_tipo_texto"),
+        source.get("filtro_ficha_taxonomia_href"),
+        source.get("filtro_ficha_selector"),
+        source.get("filtro_ficha_href"),
+        source.get("filtro_ficha_texto")
+    ])
+
+
+def normalizar_simple(texto):
+    return " ".join((texto or "").strip().lower().split())
+
+
+def bloque_resultado_cumple_tipo(anchor, tipo_esperado):
+    if not tipo_esperado:
+        return True
+
+    tipo_esperado_norm = normalizar_simple(tipo_esperado)
+
+    nodo = anchor
+
+    for _ in range(10):
+        if not nodo or getattr(nodo, "name", None) in {"html", "body"}:
+            break
+
+        texto = nodo.get_text("\n", strip=True)
+        lineas = [
+            linea.strip()
+            for linea in texto.splitlines()
+            if linea.strip()
+        ]
+
+        for i, linea in enumerate(lineas):
+            if normalizar_simple(linea) in {"tipo", "tipo:"}:
+                ventana = lineas[i + 1:i + 4]
+                tipos = [
+                    normalizar_simple(valor)
+                    for valor in ventana
+                    if normalizar_simple(valor)
+                ]
+
+                if tipo_esperado_norm in tipos:
+                    return True
+
+                if tipos:
+                    return False
+
+        nodo = nodo.parent
+
+    return False
+
+
+def anchor_cumple_filtro_listado_estricto(anchor, source):
+    tipo_esperado = source.get("filtro_listado_tipo_texto")
+
+    if tipo_esperado:
+        return bloque_resultado_cumple_tipo(anchor, tipo_esperado)
+
+    return anchor_cumple_filtro_listado(anchor, source)
+
 def scrape_categoria(source):
     url = source["url"]
     categoria = source["categoria"]
     fuente = source.get("fuente", "desconocida")
-    max_enlaces = source.get("max_enlaces", 120)
+    max_enlaces = int(source.get("max_enlaces", 120) or 120)
+    max_fichas = int(source.get("max_fichas", max_enlaces) or max_enlaces)
+    timeout_indice = source.get("timeout", 12)
+    timeout_ficha = source.get("timeout_ficha", 10)
+    selector_links = source.get("selector_links", "a[href]")
+    score_minimo = int(source.get("score_minimo", 35) or 35)
 
     print(f"🔎 Scrapeando {categoria} ({fuente})...")
 
     try:
-        response = requests.get(url, headers=HEADERS, timeout=12)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
-
         candidatos = []
         vistos = set()
+        urls_indice = obtener_urls_indice(source)
 
-        for a in soup.select("a[href]"):
-            href = a.get("href")
-            titulo = a.get_text(" ", strip=True)
+        for num_pagina, url_indice in enumerate(urls_indice, start=1):
+            print(f"   📄 Página índice {num_pagina}/{len(urls_indice)}")
 
-            if not href or not titulo:
+            response = requests.get(url_indice, headers=HEADERS, timeout=timeout_indice)
+
+            if response.status_code == 429:
+                espera = source.get("sleep_429_indice_segundos", 15)
+                print(f"⏳ 429 en índice, esperando {espera}s y saltando página...")
+                time.sleep(espera)
                 continue
 
-            url_completa = limpiar_url(href, url)
+            response.raise_for_status()
 
-            if url_completa in vistos:
-                continue
+            sleep_indice = source.get("sleep_indice_segundos", 0)
+            if sleep_indice:
+                time.sleep(sleep_indice)
 
-            if not es_url_valida(url_completa, categoria):
-                continue
+            soup = BeautifulSoup(response.text, "html.parser")
 
-            if not es_titulo_valido(titulo):
-                continue
+            for a in soup.select(selector_links):
+                href = a.get("href")
+                titulo = a.get_text(" ", strip=True)
 
-            vistos.add(url_completa)
-            candidatos.append((titulo, url_completa))
+                if not href or not titulo:
+                    continue
 
-        # Añade semillas internas obligatorias para categorías donde esmadrid
-        # a veces cambia el HTML de las cards o deja anchors con poco texto.
-        # No abre dominios externos y no sustituye al scraping: solo garantiza
-        # fichas evergreen clave que sabemos que pertenecen a esta categoría.
+                url_completa = limpiar_url(href, url_indice)
+
+                if url_completa in vistos:
+                    continue
+
+                if not es_url_valida_source(url_completa, source):
+                    continue
+
+                if not es_titulo_valido(titulo):
+                    continue
+
+                if not anchor_cumple_filtro_listado_estricto(a, source):
+                    continue
+
+                vistos.add(url_completa)
+                candidatos.append((titulo, url_completa))
+
+                if len(candidatos) >= max_enlaces:
+                    break
+
+            if len(candidatos) >= max_enlaces:
+                break
+
         for titulo_semilla, url_semilla in SEMILLAS_OBLIGATORIAS.get(categoria, []):
             url_semilla = limpiar_url(url_semilla, url)
+
             if url_semilla in vistos:
                 continue
-            if not es_url_valida(url_semilla, categoria):
+
+            if not es_url_valida_source(url_semilla, source):
                 continue
+
             vistos.add(url_semilla)
             candidatos.append((titulo_semilla, url_semilla))
 
@@ -506,18 +973,37 @@ def scrape_categoria(source):
 
         items = []
 
-        for idx, (titulo, url_item) in enumerate(candidatos, start=1):
-            print(f"   [{categoria}] propuesta {idx}/{len(candidatos)}: {titulo}")
+        for idx, (titulo, url_item) in enumerate(candidatos[:max_fichas], start=1):
+            print(f"   [{categoria}] candidato {idx}/{len(candidatos[:max_fichas])}: {titulo}")
 
             try:
-                ficha = requests.get(url_item, headers=HEADERS, timeout=10)
+                ficha = requests.get(url_item, headers=HEADERS, timeout=timeout_ficha)
+
+                if ficha.status_code == 429:
+                    espera = source.get("sleep_429_ficha_segundos", 8)
+                    print(f"⏳ 429 en ficha, esperando {espera}s y saltando: {url_item}")
+                    time.sleep(espera)
+                    continue
+
                 ficha.raise_for_status()
+
+                sleep_ficha = source.get("sleep_segundos", 0)
+                if sleep_ficha:
+                    time.sleep(sleep_ficha)
+
                 ficha_soup = BeautifulSoup(ficha.text, "html.parser")
 
-                titulo_real = obtener_titulo_real(ficha_soup, titulo)
-                descripcion = obtener_descripcion(ficha_soup)
+                if source_exige_filtro_ficha(source):
+                    if not ficha_cumple_filtro_estricto(ficha_soup, source):
+                        continue
+
+                titulo_real = obtener_titulo_real(ficha_soup, titulo, source)
+                descripcion = obtener_descripcion(ficha_soup, source)
 
             except Exception:
+                if source_exige_filtro_ficha(source):
+                    continue
+
                 titulo_real = titulo
                 descripcion = ""
 
@@ -530,7 +1016,7 @@ def scrape_categoria(source):
                 "url": url_item,
                 "fuente": fuente,
                 "categoria": categoria,
-                "intencion": mapear_intencion(categoria),
+                "intencion": source.get("intencion") or mapear_intencion(categoria),
                 "tipo_contenido": "individual",
                 "pagina_padre": url,
                 "descripcion": descripcion
@@ -538,10 +1024,11 @@ def scrape_categoria(source):
 
             item["score_editorial"] = score_editorial(item)
 
-            if item["score_editorial"] < 35:
+            if item["score_editorial"] < score_minimo:
                 continue
 
             items.append(item)
+            print(f"      ✅ aceptado: {item['titulo']}")
 
         print(f"   → {len(items)} items")
         return items
@@ -598,14 +1085,29 @@ def agrupar_y_rankear(items):
     No hace selección editorial ni recorta resultados. Mantiene todos los items,
     pero los organiza por intención y, dentro de cada intención, por categoría.
     """
-    orden_intenciones = ["viaje", "cultura", "ocio", "naturaleza", "barrios", "otros"]
+    orden_intenciones = [
+        "viaje",
+        "rutas",
+        "castillos",
+        "yacimientos",
+        "monumentos",
+        "naturaleza",
+        "ocio",
+        "barrios",
+        "cultura",
+        "otros"
+    ]
 
     orden_categorias = {
-        "viaje": ["trenes_turisticos", "excursiones"],
-        "cultura": ["rutas_madrid", "tradicion_cultura"],
-        "ocio": ["planes_madrid"],
+        "viaje": ["excursiones", "trenes_turisticos", "imprescindibles_extremadura"],
+        "rutas": ["rutas_madrid", "rutas_historicas_clm"],
+        "castillos": ["castillos_clm"],
+        "yacimientos": ["arqueologia_clm"],
+        "monumentos": ["edificios_historicos"],
         "naturaleza": ["parques_jardines", "miradores"],
+        "ocio": ["planes_madrid"],
         "barrios": ["barrios"],
+        "cultura": ["tradicion_cultura"],
         "otros": ["otros"]
     }
 

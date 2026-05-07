@@ -8,9 +8,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: evergreen-update
+  cancel-in-progress: true
+
 jobs:
   actualizar-evergreen:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Descargar repositorio
@@ -26,6 +31,11 @@ jobs:
 
       - name: Ejecutar scraper evergreen
         run: python evergreen_scraper.py
+
+      - name: Verificar JSON generado
+        run: |
+          python -m json.tool evergreen_master.json > /dev/null
+          python -m json.tool evergreen_output.json > /dev/null
 
       - name: Commit de cambios evergreen
         run: |

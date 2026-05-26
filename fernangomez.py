@@ -1,6 +1,6 @@
 import re
 import requests
-from datetime import date
+from datetime import date, timedelta
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -26,6 +26,8 @@ MESES = {
 }
 
 ORDEN_DIAS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+DIAS_CIERRE = {0}  # El Teatro Fernán Gómez cierra los lunes.
+DIAS_APERTURA_POR_DEFECTO = [1, 2, 3, 4, 5, 6]  # martes a domingo
 
 MAPA_DIAS = {
     "lunes": 0,
@@ -358,11 +360,40 @@ def _parsear_dias_semana(textos):
         if re.search(rf"\b{re.escape(nombre)}s?\b(?:\s*[:\-]|\s+a\s+las?|\s+de)\s*", t):
             dias.add(idx)
 
-    if "lunes cerrado" in t:
-        dias.discard(0)
+    # Esta sala cierra los lunes: nunca deben entrar como día de función.
+    dias = _filtrar_dias_cierre(dias)
 
     return sorted(dias)
 
+
+
+def _filtrar_dias_cierre(dias_semana):
+    return sorted(d for d in set(dias_semana or []) if d not in DIAS_CIERRE)
+
+
+def _filtrar_fechas_cierre(fechas):
+    return sorted(f for f in set(fechas or []) if f.weekday() not in DIAS_CIERRE)
+
+
+def _primera_fecha_abierta_en_rango(fecha_inicio, fecha_fin, dias_semana=None):
+    if not fecha_inicio or not fecha_fin:
+        return None
+
+    dias_permitidos = _filtrar_dias_cierre(dias_semana or [])
+    cursor = fecha_inicio
+
+    while cursor <= fecha_fin:
+        if cursor.weekday() in DIAS_CIERRE:
+            cursor += timedelta(days=1)
+            continue
+
+        if dias_permitidos and cursor.weekday() not in dias_permitidos:
+            cursor += timedelta(days=1)
+            continue
+
+        return cursor
+
+    return None
 
 def _construir_info_fecha(textos_ficha, textos_portada):
     relevantes_ficha = _seleccionar_lineas_relevantes(textos_ficha or [], limitar=True)
@@ -375,10 +406,18 @@ def _construir_info_fecha(textos_ficha, textos_portada):
     dias_semana = _parsear_dias_semana(relevantes_ficha)
 
     if fecha_inicio and fecha_fin and dias_semana:
+        fecha_representativa = _primera_fecha_abierta_en_rango(
+            fecha_inicio,
+            fecha_fin,
+            dias_semana,
+        )
+        if not fecha_representativa:
+            return None
+
         return {
             "tipo_fecha": "patron",
             "tipo": "patron",
-            "fecha": fecha_inicio.isoformat(),
+            "fecha": fecha_representativa.isoformat(),
             "fecha_inicio": fecha_inicio.isoformat(),
             "fecha_fin": fecha_fin.isoformat(),
             "fechas_funcion": [],
@@ -387,20 +426,35 @@ def _construir_info_fecha(textos_ficha, textos_portada):
         }
 
     if fecha_inicio and fecha_fin:
+        # No devolvemos "rango" puro porque la API lo interpreta como todos los días,
+        # incluyendo lunes. Esta sala cierra los lunes, así que usamos patrón
+        # de martes a domingo.
+        dias_semana = DIAS_APERTURA_POR_DEFECTO[:]
+
+        fecha_representativa = _primera_fecha_abierta_en_rango(
+            fecha_inicio,
+            fecha_fin,
+            dias_semana,
+        )
+        if not fecha_representativa:
+            return None
+
         return {
-            "tipo_fecha": "rango",
-            "tipo": "rango",
-            "fecha": fecha_inicio.isoformat(),
+            "tipo_fecha": "patron",
+            "tipo": "patron",
+            "fecha": fecha_representativa.isoformat(),
             "fecha_inicio": fecha_inicio.isoformat(),
             "fecha_fin": fecha_fin.isoformat(),
             "fechas_funcion": [],
-            "dias_semana": [],
+            "dias_semana": dias_semana,
             "texto_fecha_original": linea_rango or "",
         }
 
     fechas_lista, texto_lista = _buscar_lista_fechas(relevantes_ficha)
     if not fechas_lista:
         fechas_lista, texto_lista = _buscar_lista_fechas(relevantes_portada)
+
+    fechas_lista = _filtrar_fechas_cierre(fechas_lista)
 
     if len(fechas_lista) >= 2:
         fechas_iso = [f.isoformat() for f in fechas_lista]
@@ -415,9 +469,25 @@ def _construir_info_fecha(textos_ficha, textos_portada):
             "texto_fecha_original": texto_lista or "",
         }
 
+    if len(fechas_lista) == 1:
+        iso = fechas_lista[0].isoformat()
+        return {
+            "tipo_fecha": "unica",
+            "tipo": "unica",
+            "fecha": iso,
+            "fecha_inicio": iso,
+            "fecha_fin": iso,
+            "fechas_funcion": [iso],
+            "dias_semana": [],
+            "texto_fecha_original": texto_lista or "",
+        }
+
     fecha_unica, texto_unico = _buscar_fecha_unica(relevantes_ficha)
     if not fecha_unica:
         fecha_unica, texto_unico = _buscar_fecha_unica(relevantes_portada)
+
+    if fecha_unica and fecha_unica.weekday() in DIAS_CIERRE:
+        return None
 
     if fecha_unica:
         iso = fecha_unica.isoformat()

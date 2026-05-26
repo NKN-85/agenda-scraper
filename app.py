@@ -463,7 +463,13 @@ SALA_VARIANTES = {
     ],
     "teatro espanol": ["teatro espanol", "teatro español", "teatroespanol"],
     "ifema madrid": ["ifema", "ifema madrid", "feria de madrid"],
-    "condeduque madrid": ["condeduque madrid", "condeduque", "contemporanea condeduque"],
+    "condeduque madrid": [
+        "condeduque madrid",
+        "condeduque",
+        "condeduquemadrid",
+        "condeduquemadrid es",
+        "contemporanea condeduque",
+    ],
     "sala villanos": ["sala villanos", "villanos", "salavillanos", "villanosmadrid"],
     "sala galileo galilei": [
         "sala galileo galilei",

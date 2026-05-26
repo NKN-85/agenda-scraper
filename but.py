@@ -1,9 +1,7 @@
-import requests
 import re
 from bs4 import BeautifulSoup
 
 from utils import (
-    HEADERS,
     limpiar_texto,
     es_futura_o_hoy,
     agregar_evento,
@@ -15,7 +13,7 @@ from utils import (
 def convertir_fecha_but(fecha_texto):
     fecha_texto = limpiar_texto(fecha_texto).lower()
 
-    # Ejemplos actuales:
+    # Ejemplos:
     # 24 MAR 2026
     # 2 MAYO 2026
     m = re.fullmatch(r"(\d{1,2})\s+([a-záéíóú]+)\s+(\d{4})", fecha_texto)
@@ -36,67 +34,84 @@ def sacar_but():
     eventos = []
     vistos = set()
 
-    # 🔥 CAMBIO AQUÍ
     respuesta = get_url(url, timeout=20)
-
     soup = BeautifulSoup(respuesta.text, "html.parser")
 
-    lineas = [
-        limpiar_texto(x)
-        for x in soup.get_text("\n", strip=True).splitlines()
-        if limpiar_texto(x)
-    ]
-
-    # URLs de compra en el orden en que aparecen en la página
-    urls_compra = []
     for a in soup.find_all("a", href=True):
-        texto = limpiar_texto(a.get_text(" ", strip=True)).upper()
-        href = a.get("href", "").strip()
+        texto_boton = limpiar_texto(a.get_text(" ", strip=True)).upper()
 
-        if texto == "COMPRAR ENTRADAS" and href:
-            urls_compra.append(href)
-
-    candidatos = []
-
-    for i, linea in enumerate(lineas):
-        fecha_evento = convertir_fecha_but(linea)
-        if not fecha_evento:
+        if texto_boton != "COMPRAR ENTRADAS":
             continue
 
-        if i == 0:
+        url_evento = a.get("href", "").strip()
+
+        if not url_evento:
             continue
 
-        titulo = limpiar_texto(lineas[i - 1])
+        # Subimos por los padres del botón hasta encontrar
+        # un bloque que contenga título + fecha + botón.
+        bloque = a
 
-        # filtros de basura por si acaso
-        if not titulo or titulo.upper() in {
-            "AGENDA",
-            "VVV",
-            "COMPRAR ENTRADAS",
-            "INFORMACIÓN CONCIERTOS",
-            "MAIL",
-            "HORARIO",
-            "TELÉFONO",
-        }:
-            continue
+        for _ in range(8):
+            if not bloque.parent:
+                break
 
-        if es_futura_o_hoy(fecha_evento):
-            candidatos.append((titulo, fecha_evento))
+            bloque = bloque.parent
 
-    total = min(len(candidatos), len(urls_compra))
+            textos = [
+                limpiar_texto(x)
+                for x in bloque.get_text("\n", strip=True).splitlines()
+                if limpiar_texto(x)
+            ]
 
-    for idx in range(total):
-        titulo, fecha_evento = candidatos[idx]
-        url_evento = urls_compra[idx]
+            fecha_evento = None
+            fecha_idx = None
 
-        agregar_evento(
-            eventos,
-            vistos,
-            titulo,
-            fecha_evento,
-            lugar,
-            url_evento,
-            url
-        )
+            for i, linea in enumerate(textos):
+                fecha = convertir_fecha_but(linea)
+
+                if fecha:
+                    fecha_evento = fecha
+                    fecha_idx = i
+                    break
+
+            if not fecha_evento or fecha_idx is None:
+                continue
+
+            if fecha_idx == 0:
+                continue
+
+            titulo = limpiar_texto(textos[fecha_idx - 1])
+
+            if not titulo:
+                continue
+
+            # Filtros por si el bloque contiene textos basura
+            if titulo.upper() in {
+                "AGENDA",
+                "VVV",
+                "COMPRAR ENTRADAS",
+                "INFORMACIÓN CONCIERTOS",
+                "MAIL",
+                "HORARIO",
+                "TELÉFONO",
+            }:
+                continue
+
+            if not es_futura_o_hoy(fecha_evento):
+                continue
+
+            agregar_evento(
+                eventos,
+                vistos,
+                titulo,
+                fecha_evento,
+                lugar,
+                url_evento,
+                url
+            )
+
+            # Ya hemos procesado este botón/evento
+            break
 
     return eventos

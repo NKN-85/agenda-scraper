@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import date
+from datetime import date, timedelta
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
@@ -11,7 +11,10 @@ from utils import agregar_evento, get_url
 BASE_URL = "https://www.teatroespanol.es"
 PROGRAMACION_URL = f"{BASE_URL}/programacion"
 
-# URL AJAX que has localizado en Red/XHR.
+DIAS_CIERRE = {0}  # lunes
+DIAS_FUNCION = [1, 2, 3, 4, 5, 6]  # martes a domingo
+
+# URL AJAX localizada en Red/XHR.
 # Solo cambiamos page=...
 AJAX_URL_TEMPLATE = (
     "https://www.teatroespanol.es/views/ajax"
@@ -96,11 +99,15 @@ def _es_url_evento(url):
     return not any(x in u for x in excluidos)
 
 
-def _extraer_fecha_desde_div(div_fecha, anio_defecto=None):
+def _extraer_fecha_desde_div(div_fecha, anio_defecto=None, mes_defecto=None):
     """
     Soporta:
     <div class="date language--es"><span class="number">21</span> Mayo</div>
     <div class="date language--es"><span class="number">21</span> Junio <span class="number">2026</span></div>
+
+    También soporta rangos donde la primera fecha trae solo el día:
+    11 >> 28 Junio 2026
+    En ese caso hereda mes/año de la fecha final.
     """
     if not div_fecha:
         return None
@@ -109,18 +116,37 @@ def _extraer_fecha_desde_div(div_fecha, anio_defecto=None):
     if not texto:
         return None
 
+    # Caso completo: 21 Mayo / 21 Junio 2026
     m = re.fullmatch(r"(\d{1,2})\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)(?:\s+(\d{4}))?", texto)
-    if not m:
+    if m:
+        dia = int(m.group(1))
+        mes_txt = m.group(2)
+        anio = int(m.group(3)) if m.group(3) else anio_defecto
+
+        if not anio:
+            return None
+
+        return _construir_fecha(dia, mes_txt, anio)
+
+    # Caso abreviado: 11
+    m = re.fullmatch(r"(\d{1,2})", texto)
+    if m and mes_defecto and anio_defecto:
+        return _construir_fecha(m.group(1), mes_defecto, anio_defecto)
+
+    return None
+
+
+def _primera_fecha_sin_lunes(fecha_inicio, fecha_fin):
+    if not fecha_inicio or not fecha_fin:
         return None
 
-    dia = int(m.group(1))
-    mes_txt = m.group(2)
-    anio = int(m.group(3)) if m.group(3) else anio_defecto
+    cursor = fecha_inicio
+    while cursor <= fecha_fin:
+        if cursor.weekday() not in DIAS_CIERRE:
+            return cursor
+        cursor += timedelta(days=1)
 
-    if not anio:
-        return None
-
-    return _construir_fecha(dia, mes_txt, anio)
+    return None
 
 
 def _parsear_show_content(bloque):
@@ -154,15 +180,36 @@ def _parsear_show_content(bloque):
     if len(fechas) < 2:
         return None
 
-    # La segunda fecha suele traer el año
+    # La segunda fecha suele traer el mes y el año.
+    # Ejemplo normal: 28 Junio 2026
+    # Ejemplo abreviado: 11 >> 28 Junio 2026
     texto_fin = _limpiar(fechas[1].get_text(" ", strip=True))
+
     m_anio = re.search(r"\b(20\d{2})\b", texto_fin)
     anio = int(m_anio.group(1)) if m_anio else None
 
-    fecha_inicio = _extraer_fecha_desde_div(fechas[0], anio_defecto=anio)
-    fecha_fin = _extraer_fecha_desde_div(fechas[1], anio_defecto=anio)
+    m_mes = re.search(
+        r"\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b",
+        _normalizar(texto_fin),
+    )
+    mes_fin = m_mes.group(1) if m_mes else None
+
+    fecha_inicio = _extraer_fecha_desde_div(
+        fechas[0],
+        anio_defecto=anio,
+        mes_defecto=mes_fin,
+    )
+    fecha_fin = _extraer_fecha_desde_div(
+        fechas[1],
+        anio_defecto=anio,
+        mes_defecto=mes_fin,
+    )
 
     if not fecha_inicio or not fecha_fin:
+        return None
+
+    fecha_representativa = _primera_fecha_sin_lunes(fecha_inicio, fecha_fin)
+    if not fecha_representativa:
         return None
 
     # Evita históricos
@@ -176,6 +223,7 @@ def _parsear_show_content(bloque):
     return {
         "titulo": titulo,
         "url_evento": url_evento,
+        "fecha": fecha_representativa.isoformat(),
         "fecha_inicio": fecha_inicio.isoformat(),
         "fecha_fin": fecha_fin.isoformat(),
         "texto_fecha_original": texto_fecha_original,
@@ -296,18 +344,18 @@ def sacar_teatroespanol():
             eventos=eventos,
             vistos=vistos,
             titulo=e["titulo"],
-            fecha_evento=e["fecha_inicio"],
+            fecha_evento=e["fecha"],
             lugar=lugar,
             url_evento=e["url_evento"],
             fuente=fuente,
             info_fecha={
                 "tipo_fecha": "patron",
                 "tipo": "patron",
-                "fecha": e["fecha_inicio"],
+                "fecha": e["fecha"],
                 "fecha_inicio": e["fecha_inicio"],
                 "fecha_fin": e["fecha_fin"],
                 "fechas_funcion": [],
-                "dias_semana": [1, 2, 3, 4, 5, 6],  # martes a domingo
+                "dias_semana": DIAS_FUNCION,
                 "texto_fecha_original": e["texto_fecha_original"],
             },
         )

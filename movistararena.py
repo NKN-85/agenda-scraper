@@ -74,7 +74,6 @@ def parsear_sessions_data(js_texto):
     try:
         return json.loads(bloque_json)
     except Exception as e:
-        print(f"[movistararena] error parseando JSON: {e}")
         return {}
 
 
@@ -231,7 +230,6 @@ def extraer_fechas_ficha(url_evento):
         respuesta = get_url(url_evento, timeout=20)
         soup = BeautifulSoup(respuesta.text, "html.parser")
     except Exception as e:
-        print(f"[movistararena] no se pudo abrir ficha para fechas extra: {url_evento} ({e})")
         return []
 
     fechas = set()
@@ -304,7 +302,6 @@ def sacar_movistararena():
     datos = parsear_sessions_data(texto)
 
     if not datos:
-        print("[movistararena] no se pudieron extraer datos de sessions-data.js.php")
         return eventos
 
     hoy = date.today()
@@ -360,10 +357,6 @@ def sacar_movistararena():
 
         if len(fechas) > 1:
             total_fechas_extra += len(fechas) - 1
-            print(
-                f"[movistararena] multifecha detectada: {titulo} -> "
-                f"{', '.join(f.isoformat() for f in fechas)}"
-            )
 
         agregar_evento(
             eventos,
@@ -378,6 +371,4 @@ def sacar_movistararena():
         evento_guardado = buscar_evento_guardado(eventos, titulo, lugar, url_evento)
         actualizar_evento_con_lista_fechas(evento_guardado, fechas)
 
-    print(f"[movistararena] eventos brutos leídos: {total_bruto}")
-    print(f"[movistararena] fechas extra detectadas en fichas: {total_fechas_extra}")
     return eventos

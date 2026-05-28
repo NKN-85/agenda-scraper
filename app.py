@@ -311,6 +311,13 @@ SALA_ALIAS = {
     "movistar": "movistar arena",
     "movistar arena": "movistar arena",
     "movistararena": "movistar arena",
+    "estadiometropolitano": "estadio metropolitano",
+    "estadio metropolitano": "estadio metropolitano",
+    "metropolitano": "estadio metropolitano",
+    "riyadh air metropolitano": "estadio metropolitano",
+    "riyadhairmetropolitano": "estadio metropolitano",
+    "neptuno premium": "estadio metropolitano",
+    "neptunopremium": "estadio metropolitano",
     "auditorio": "auditorio nacional",
     "inaem": "auditorio nacional",
     "auditorio nacional": "auditorio nacional",
@@ -428,6 +435,16 @@ SALA_ALIAS = {
 
 SALA_VARIANTES = {
     "movistar arena": ["movistar arena", "movistararena", "wizink center", "wi zink"],
+    "estadio metropolitano": [
+        "estadio metropolitano",
+        "riyadh air metropolitano",
+        "metropolitano",
+        "neptuno premium",
+        "neptunopremium",
+        "events neptunopremium",
+        "atleticodemadrid",
+        "atlético de madrid",
+    ],
     "auditorio nacional": [
         "auditorio nacional",
         "auditorio nacional de musica",

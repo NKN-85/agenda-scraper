@@ -45,6 +45,7 @@ from teatrolalatina import sacar_teatrolalatina
 from teatroreal import sacar_teatroreal
 from zarzuela import sacar_zarzuela
 from lazarogaldiano import sacar_lazarogaldiano
+from estadiometropolitano import sacar_estadiometropolitano
 
 from utils import get_url, limpiar_texto, construir_fecha, normalizar_info_fecha
 
@@ -342,6 +343,9 @@ def clasificar_tipo_evento(evento):
         "la riviera",
         "palacio vistalegre",
         "movistar arena",
+        "estadio metropolitano",
+        "riyadh air metropolitano",
+        "metropolitano",
     ]):
         return "concierto"
 
@@ -363,6 +367,9 @@ def generar_tags(evento, tipo_evento):
 
     if "movistar arena" in lugar:
         tags.add("movistar-arena")
+    
+    if "estadio metropolitano" in lugar or "riyadh air metropolitano" in lugar or "metropolitano" in lugar:
+        tags.add("estadio-metropolitano")
 
     if "berlín" in lugar or "berlin" in lugar:
         tags.add("cafe-berlin")
@@ -797,6 +804,7 @@ def main():
         sacar_teatroreal,
         sacar_zarzuela,
         sacar_lazarogaldiano,
+        sacar_estadiometropolitano,
     ]
 
     for funcion in fuentes:

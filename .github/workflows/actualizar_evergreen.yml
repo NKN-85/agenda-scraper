@@ -10,16 +10,18 @@ permissions:
 
 concurrency:
   group: evergreen-update
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   actualizar-evergreen:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 90
 
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -27,7 +29,9 @@ jobs:
           python-version: "3.11"
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Ejecutar scraper evergreen
         run: python evergreen_scraper.py
@@ -43,4 +47,5 @@ jobs:
           git config user.email "github-actions@github.com"
           git add evergreen_master.json evergreen_output.json
           git diff --cached --quiet || git commit -m "chore: actualiza evergreen mensual"
-          git push
+          git pull --rebase origin main
+          git push origin main

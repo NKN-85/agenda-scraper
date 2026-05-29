@@ -311,13 +311,6 @@ SALA_ALIAS = {
     "movistar": "movistar arena",
     "movistar arena": "movistar arena",
     "movistararena": "movistar arena",
-    "estadiometropolitano": "estadio metropolitano",
-    "estadio metropolitano": "estadio metropolitano",
-    "metropolitano": "estadio metropolitano",
-    "riyadh air metropolitano": "estadio metropolitano",
-    "riyadhairmetropolitano": "estadio metropolitano",
-    "neptuno premium": "estadio metropolitano",
-    "neptunopremium": "estadio metropolitano",
     "auditorio": "auditorio nacional",
     "inaem": "auditorio nacional",
     "auditorio nacional": "auditorio nacional",
@@ -435,16 +428,6 @@ SALA_ALIAS = {
 
 SALA_VARIANTES = {
     "movistar arena": ["movistar arena", "movistararena", "wizink center", "wi zink"],
-    "estadio metropolitano": [
-        "estadio metropolitano",
-        "riyadh air metropolitano",
-        "metropolitano",
-        "neptuno premium",
-        "neptunopremium",
-        "events neptunopremium",
-        "atleticodemadrid",
-        "atlético de madrid",
-    ],
     "auditorio nacional": [
         "auditorio nacional",
         "auditorio nacional de musica",
@@ -693,16 +676,26 @@ def extraer_items_evergreen(bloque, categoria=None):
     if not bloque:
         return []
 
-    categoria_norm = normalizar_texto(categoria) if categoria else None
+    categorias_norm = categoria_aliases_evergreen(categoria) if categoria else None
+    filtros_categoria = extraer_filtros_desde_q(categoria) if categoria else None
     items = []
 
     for categoria_data in bloque.get("categorias", []) or []:
         nombre_categoria = categoria_data.get("categoria", "")
 
-        if categoria_norm and normalizar_texto(nombre_categoria) != categoria_norm:
-            continue
+        if categorias_norm and normalizar_texto(nombre_categoria) not in categorias_norm:
+            # Si categoria no era categoría real sino alias tipo "senderismo",
+            # permitimos filtrar a nivel item por los campos enriquecidos.
+            if not filtros_categoria:
+                continue
 
         for item in categoria_data.get("items", []) or []:
+            if filtros_categoria and not item_cumple_filtros_inteligentes(item, filtros_categoria):
+                continue
+
+            if categorias_norm and normalizar_texto(nombre_categoria) not in categorias_norm and not filtros_categoria:
+                continue
+
             items.append(item)
 
     return sorted(
@@ -724,15 +717,7 @@ def paginar_items(items, limit=10, offset=0, max_limit=50):
 
 
 def texto_evergreen_busqueda(item):
-    campos = [
-        item.get("titulo"),
-        item.get("descripcion"),
-        item.get("fuente"),
-        item.get("categoria"),
-        item.get("intencion"),
-        item.get("url")
-    ]
-    return normalizar_texto(" ".join(str(c or "") for c in campos))
+    return texto_evergreen_busqueda_ampliado(item)
 
 
 def listar_intenciones_evergreen(bloques):
@@ -762,21 +747,30 @@ def listar_categorias_evergreen(bloques, intencion=None):
 
 
 def extraer_todos_items_evergreen(bloques, intencion=None, categoria=None):
-    intencion_norm = normalizar_texto(intencion) if intencion else None
-    categoria_norm = normalizar_texto(categoria) if categoria else None
+    intencion_norm = normalizar_intencion_evergreen_alias(intencion) if intencion else None
+    categorias_norm = categoria_aliases_evergreen(categoria) if categoria else None
+    filtros_categoria = extraer_filtros_desde_q(categoria) if categoria else None
     items = []
 
     for bloque in bloques:
-        if intencion_norm and normalizar_texto(bloque.get("intencion")) != intencion_norm:
+        if intencion_norm and normalizar_texto(bloque.get("intencion")) != normalizar_texto(intencion_norm):
             continue
 
         for categoria_data in bloque.get("categorias", []) or []:
             nombre_categoria = categoria_data.get("categoria", "")
 
-            if categoria_norm and normalizar_texto(nombre_categoria) != categoria_norm:
-                continue
+            categoria_coincide = True
+            if categorias_norm:
+                categoria_coincide = normalizar_texto(nombre_categoria) in categorias_norm
 
             for item in categoria_data.get("items", []) or []:
+                if categorias_norm and not categoria_coincide:
+                    if not filtros_categoria or not item_cumple_filtros_inteligentes(item, filtros_categoria):
+                        continue
+
+                if filtros_categoria and not item_cumple_filtros_inteligentes(item, filtros_categoria):
+                    continue
+
                 items.append(item)
 
     return sorted(
@@ -809,6 +803,285 @@ def construir_resumen_evergreen(bloques):
         })
 
     return resumen, total_items
+
+
+
+# -------------------------
+# BÚSQUEDA EVERGREEN INTELIGENTE SIN CAMBIAR SCHEMA
+# -------------------------
+
+EVERGREEN_ALIAS_INTENCION = {
+    "viajes": "viaje",
+    "viaje": "viaje",
+    "escapadas": "viaje",
+    "excursiones": "viaje",
+    "trenes": "viaje",
+    "cultura": "cultura",
+    "tradicion": "cultura",
+    "tradición": "cultura",
+    "historia": "cultura",
+    "ocio": "ocio",
+    "planes": "ocio",
+    "naturaleza": "naturaleza",
+    "parques": "naturaleza",
+    "jardines": "naturaleza",
+    "miradores": "naturaleza",
+    "barrios": "barrios",
+    "zonas": "barrios",
+    "rutas": "rutas",
+    "ruta": "rutas",
+    "castillos": "castillos",
+    "castillo": "castillos",
+    "yacimientos": "yacimientos",
+    "yacimiento": "yacimientos",
+    "arqueologia": "yacimientos",
+    "arqueología": "yacimientos",
+    "ruinas": "yacimientos",
+    "ruina": "yacimientos",
+    "monumentos": "monumentos",
+    "monumento": "monumentos",
+}
+
+
+EVERGREEN_ALIAS_CATEGORIA = {
+    "senderismo": ["rutas_senderismo_madrid", "rutas_naturaleza_sierra_norte"],
+    "rutas_senderismo": ["rutas_senderismo_madrid", "rutas_naturaleza_sierra_norte"],
+    "bicicleta": ["rutas_naturaleza_sierra_norte"],
+    "bici": ["rutas_naturaleza_sierra_norte"],
+    "mtb": ["rutas_naturaleza_sierra_norte"],
+    "cicloturismo": ["rutas_naturaleza_sierra_norte"],
+    "sierra_norte": ["rutas_naturaleza_sierra_norte"],
+    "sierra norte": ["rutas_naturaleza_sierra_norte"],
+    "sierra_guadarrama": ["rutas_senderismo_madrid"],
+    "sierra guadarrama": ["rutas_senderismo_madrid"],
+    "sierra_oeste": ["rutas_senderismo_madrid"],
+    "sierra oeste": ["rutas_senderismo_madrid"],
+    "villas_madrid": ["rutas_naturaleza_madrid"],
+    "villas de madrid": ["rutas_naturaleza_madrid"],
+    "patrimonio": ["rutas_patrimonio_madrid"],
+    "unesco": ["rutas_patrimonio_madrid"],
+    "castilla_la_mancha": ["rutas_historicas_clm", "castillos_clm", "arqueologia_clm"],
+    "castilla la mancha": ["rutas_historicas_clm", "castillos_clm", "arqueologia_clm"],
+    "extremadura": ["imprescindibles_extremadura"],
+    "castillos": ["castillos_clm"],
+    "castillo": ["castillos_clm"],
+    "toledo": ["castillos_clm", "arqueologia_clm", "rutas_historicas_clm"],
+    "guadalajara": ["castillos_clm", "arqueologia_clm", "rutas_historicas_clm"],
+    "cuenca": ["castillos_clm", "arqueologia_clm", "rutas_historicas_clm"],
+    "ciudad_real": ["castillos_clm", "arqueologia_clm", "rutas_historicas_clm"],
+    "ciudad real": ["castillos_clm", "arqueologia_clm", "rutas_historicas_clm"],
+    "albacete": ["castillos_clm", "arqueologia_clm", "rutas_historicas_clm"],
+    "yacimientos": ["arqueologia_clm"],
+    "yacimiento": ["arqueologia_clm"],
+    "arqueologia": ["arqueologia_clm"],
+    "arqueología": ["arqueologia_clm"],
+    "ruinas": ["arqueologia_clm"],
+    "ruina": ["arqueologia_clm"],
+}
+
+
+def normalizar_valor_evergreen(valor):
+    return normalizar_texto(valor).replace(" ", "_")
+
+
+def normalizar_intencion_evergreen_alias(intencion):
+    if not intencion:
+        return None
+
+    clave = normalizar_texto(intencion)
+    return EVERGREEN_ALIAS_INTENCION.get(clave, normalizar_valor_evergreen(intencion))
+
+
+def categoria_aliases_evergreen(categoria):
+    if not categoria:
+        return None
+
+    clave_texto = normalizar_texto(categoria)
+    clave_valor = clave_texto.replace(" ", "_")
+
+    aliases = EVERGREEN_ALIAS_CATEGORIA.get(clave_texto) or EVERGREEN_ALIAS_CATEGORIA.get(clave_valor)
+    if aliases:
+        return {normalizar_texto(a) for a in aliases}
+
+    return {normalizar_texto(categoria)}
+
+
+def texto_evergreen_busqueda_ampliado(item):
+    campos = [
+        item.get("titulo"),
+        item.get("descripcion"),
+        item.get("fuente"),
+        item.get("categoria"),
+        item.get("intencion"),
+        item.get("url"),
+        item.get("pagina_padre"),
+        item.get("tipo_contenido"),
+        item.get("tipo_plan"),
+        item.get("subtipo_plan"),
+        item.get("zona"),
+        item.get("comunidad"),
+        item.get("provincia"),
+        " ".join(item.get("tags", []) or []),
+    ]
+
+    return normalizar_texto(" ".join(str(c or "") for c in campos))
+
+
+def extraer_filtros_desde_q(q):
+    """
+    Convierte búsquedas naturales del GPT en filtros internos sin tocar el schema.
+    Ejemplos:
+    - "rutas de senderismo en Madrid"
+    - "rutas de bicicleta en la Sierra Norte"
+    - "castillos en Toledo"
+    - "ruinas/yacimientos en Madrid"
+    """
+    q_norm = normalizar_texto(q)
+    filtros = {
+        "tipo_plan": None,
+        "subtipo_plan": None,
+        "zona": None,
+        "comunidad": None,
+        "provincia": None,
+        "tags": set(),
+    }
+
+    if any(x in q_norm for x in ["ruta", "rutas", "senderismo", "senda", "camino", "bicicleta", "bici", "mtb", "cicloturismo"]):
+        filtros["tipo_plan"] = "ruta"
+        filtros["tags"].add("ruta")
+
+    if any(x in q_norm for x in ["senderismo", "senda", "camino"]):
+        filtros["subtipo_plan"] = "senderismo"
+        filtros["tags"].add("senderismo")
+
+    if any(x in q_norm for x in ["bicicleta", "bici", "mtb", "cicloturismo", "gravel"]):
+        filtros["subtipo_plan"] = "bicicleta"
+        filtros["tags"].add("bicicleta")
+
+    if "castillo" in q_norm or "castillos" in q_norm or "fortaleza" in q_norm:
+        filtros["tipo_plan"] = "castillo"
+        filtros["tags"].add("castillo")
+
+    if any(x in q_norm for x in ["yacimiento", "yacimientos", "arqueologia", "ruina", "ruinas"]):
+        filtros["tipo_plan"] = "yacimiento"
+        filtros["tags"].add("yacimiento")
+
+    if any(x in q_norm for x in ["monumento", "monumentos"]):
+        filtros["tipo_plan"] = "monumento"
+
+    if "sierra norte" in q_norm or "lozoya" in q_norm or "buitrago" in q_norm:
+        filtros["zona"] = "sierra_norte"
+        filtros["tags"].add("sierra-norte")
+
+    if "guadarrama" in q_norm:
+        filtros["zona"] = "sierra_guadarrama"
+        filtros["tags"].add("sierra-guadarrama")
+
+    if "sierra oeste" in q_norm:
+        filtros["zona"] = "sierra_oeste"
+        filtros["tags"].add("sierra-oeste")
+
+    if "vegas" in q_norm or "alcarria" in q_norm:
+        filtros["zona"] = "vegas_alcarria"
+        filtros["tags"].add("vegas-alcarria")
+
+    if "villas de madrid" in q_norm:
+        filtros["zona"] = "villas_madrid"
+        filtros["tags"].add("villas-madrid")
+
+    if "castilla la mancha" in q_norm or "castillalamancha" in q_norm:
+        filtros["comunidad"] = "castilla_la_mancha"
+        filtros["tags"].add("castilla-la-mancha")
+
+    if "extremadura" in q_norm:
+        filtros["comunidad"] = "extremadura"
+        filtros["tags"].add("extremadura")
+
+    if "madrid" in q_norm and not filtros["comunidad"]:
+        filtros["comunidad"] = "madrid"
+        filtros["tags"].add("madrid")
+
+    provincias = {
+        "toledo": "toledo",
+        "guadalajara": "guadalajara",
+        "cuenca": "cuenca",
+        "ciudad real": "ciudad_real",
+        "albacete": "albacete",
+        "caceres": "caceres",
+        "caceres": "caceres",
+        "badajoz": "badajoz",
+    }
+
+    for texto_provincia, valor in provincias.items():
+        if texto_provincia in q_norm:
+            filtros["provincia"] = valor
+            filtros["tags"].add(valor.replace("_", "-"))
+
+    return filtros
+
+
+def item_cumple_filtros_inteligentes(item, filtros):
+    if not filtros:
+        return True
+
+    def norm(v):
+        return normalizar_valor_evergreen(v)
+
+    tipo_plan = filtros.get("tipo_plan")
+    if tipo_plan and norm(item.get("tipo_plan")) != norm(tipo_plan):
+        return False
+
+    subtipo_plan = filtros.get("subtipo_plan")
+    if subtipo_plan and norm(item.get("subtipo_plan")) != norm(subtipo_plan):
+        return False
+
+    zona = filtros.get("zona")
+    if zona and norm(item.get("zona")) != norm(zona):
+        return False
+
+    comunidad = filtros.get("comunidad")
+    if comunidad and norm(item.get("comunidad")) != norm(comunidad):
+        return False
+
+    provincia = filtros.get("provincia")
+    if provincia and norm(item.get("provincia")) != norm(provincia):
+        return False
+
+    tags_filtro = filtros.get("tags") or set()
+    if tags_filtro:
+        tags_item = {normalizar_texto(t) for t in (item.get("tags", []) or [])}
+        # Los tags ayudan al ranking y afinan, pero no obligamos a que estén todos.
+        # Los campos tipo/subtipo/zona/comunidad/provincia ya son los filtros duros.
+        if not tags_item.intersection({normalizar_texto(t) for t in tags_filtro}):
+            texto = texto_evergreen_busqueda_ampliado(item)
+            if not any(normalizar_texto(t) in texto for t in tags_filtro):
+                return False
+
+    return True
+
+
+def calcular_score_busqueda_evergreen(item, q=None, filtros=None):
+    score = int(item.get("score_editorial", 0) or 0)
+    texto = texto_evergreen_busqueda_ampliado(item)
+    filtros = filtros or {}
+
+    if q:
+        for palabra in normalizar_texto(q).split():
+            if len(palabra) >= 3 and palabra in texto:
+                score += 3
+
+    for campo in ["tipo_plan", "subtipo_plan", "zona", "comunidad", "provincia"]:
+        valor = filtros.get(campo)
+        if valor and normalizar_valor_evergreen(item.get(campo)) == normalizar_valor_evergreen(valor):
+            score += 20
+
+    tags_filtro = filtros.get("tags") or set()
+    tags_item = {normalizar_texto(t) for t in (item.get("tags", []) or [])}
+    for tag in tags_filtro:
+        if normalizar_texto(tag) in tags_item:
+            score += 8
+
+    return score
 
 
 @app.get("/", response_model=RootResponse)
@@ -982,12 +1255,33 @@ def buscar_evergreen(
         categoria=categoria
     )
 
-    if q:
-        q_norm = normalizar_texto(q)
+    filtros_q = extraer_filtros_desde_q(q) if q else None
+
+    if filtros_q:
         items = [
             item for item in items
-            if q_norm in texto_evergreen_busqueda(item)
+            if item_cumple_filtros_inteligentes(item, filtros_q)
         ]
+
+    if q:
+        q_norm = normalizar_texto(q)
+        palabras_q = [p for p in q_norm.split() if len(p) >= 3]
+
+        # Búsqueda flexible: si hay filtros inteligentes, no obligamos a que
+        # la frase completa aparezca literal. Si no hay filtros, usamos texto libre.
+        if not filtros_q or not any(filtros_q.get(k) for k in ["tipo_plan", "subtipo_plan", "zona", "comunidad", "provincia"]):
+            items = [
+                item for item in items
+                if q_norm in texto_evergreen_busqueda(item)
+                or all(p in texto_evergreen_busqueda(item) for p in palabras_q)
+            ]
+
+    if q or filtros_q:
+        items = sorted(
+            items,
+            key=lambda item: calcular_score_busqueda_evergreen(item, q=q, filtros=filtros_q),
+            reverse=True
+        )
 
     pagina, limit, offset = paginar_items(
         items,
@@ -1041,7 +1335,8 @@ def obtener_top_evergreen_por_intencion(
     categoria: Optional[str] = None
 ):
     bloques = cargar_evergreen()
-    bloque = buscar_bloque_evergreen(bloques, intencion)
+    intencion_busqueda = normalizar_intencion_evergreen_alias(intencion) or intencion
+    bloque = buscar_bloque_evergreen(bloques, intencion_busqueda)
 
     if not bloque:
         return {
@@ -1072,7 +1367,8 @@ def obtener_top_evergreen_por_intencion(
 @app.get("/evergreen/{intencion}", response_model=Union[EvergreenBloque, ErrorResponse])
 def obtener_evergreen_por_intencion(intencion: str):
     bloques = cargar_evergreen()
-    bloque = buscar_bloque_evergreen(bloques, intencion)
+    intencion_busqueda = normalizar_intencion_evergreen_alias(intencion) or intencion
+    bloque = buscar_bloque_evergreen(bloques, intencion_busqueda)
 
     if not bloque:
         return {

@@ -128,7 +128,13 @@ INTENCION_MAP = {
     "edificios_historicos": "cultura",
     "arqueologia_clm": "cultura",
     "rutas_historicas_clm": "cultura",
-    "castillos_clm": "cultura"
+    "castillos_clm": "cultura",
+
+    # Nuevas fuentes evergreen de rutas/naturaleza
+    "rutas_naturaleza_sierra_norte": "naturaleza",
+    "rutas_naturaleza_madrid": "naturaleza",
+    "rutas_senderismo_madrid": "naturaleza",
+    "rutas_patrimonio_madrid": "rutas"
 }
 
 URLS_INDICE = {
@@ -465,17 +471,55 @@ def score_editorial(item):
     if categoria == "excursiones":
         score += 15
 
+    if categoria == "imprescindibles_extremadura":
+        score += 15
+
     if categoria in ["rutas_madrid", "tradicion_cultura"]:
         score += 10
 
     if categoria in ["parques_jardines", "miradores"]:
         score += 8
 
+    if categoria in [
+        "rutas_naturaleza_sierra_norte",
+        "rutas_naturaleza_madrid",
+        "rutas_senderismo_madrid",
+        "rutas_patrimonio_madrid",
+    ]:
+        score += 14
+
     if any(x in texto for x in ["patrimonio", "historia", "histórico", "historico", "cultural", "monumental"]):
         score += 8
 
-    if any(x in texto for x in ["ruta", "paseo", "descubre", "visita", "viaja", "excursión", "excursion"]):
-        score += 6
+    if any(x in texto for x in [
+        "ruta",
+        "rutas",
+        "paseo",
+        "descubre",
+        "visita",
+        "viaja",
+        "excursión",
+        "excursion",
+        "senderismo",
+        "senda",
+        "camino",
+        "circular",
+        "gr-",
+        "gr ",
+        "bicicleta",
+        "bici",
+        "mtb",
+        "sierra",
+        "guadarrama",
+        "lozoya",
+        "jarama",
+        "alcarria",
+        "vegas",
+        "villas de madrid",
+        "patrimonio mundial",
+        "unesco",
+    ]):
+        score += 8
 
     if any(x in texto for x in ["familia", "niños", "ninos", "romántico", "romantico", "secreto", "atardecer"]):
         score += 4
@@ -551,6 +595,11 @@ def es_url_valida_source(url, source):
     parsed = urlparse(url)
 
     if parsed.netloc.lower() not in obtener_dominios_permitidos(source):
+        return False
+
+    # Evita que la propia página índice/listado entre como ficha individual.
+    url_source = limpiar_url(source.get("url", ""), source.get("url", "")) if source.get("url") else ""
+    if url_source and limpiar_url(url, source.get("url", "")) == url_source:
         return False
 
     if url in URLS_INDICE:
@@ -890,6 +939,458 @@ def anchor_cumple_filtro_listado_estricto(anchor, source):
 
     return anchor_cumple_filtro_listado(anchor, source)
 
+
+def es_fuente_sierra_norte(source):
+    return source.get("fuente") == "sierra_norte_madrid"
+
+
+def es_fuente_extremadura(source):
+    return source.get("fuente") == "turismo_extremadura"
+
+
+def es_url_indice_source(url, source):
+    url_source = limpiar_url(source.get("url", ""), source.get("url", "")) if source.get("url") else ""
+    if not url_source:
+        return False
+
+    return limpiar_url(url, source.get("url", "")) == url_source
+
+
+def es_url_ficha_ruta_sierra(url):
+    parsed = urlparse(url)
+    return parsed.netloc.lower() == "www.sierranortemadrid.org" and "/ruta/" in parsed.path
+
+
+def es_url_pagina_intermedia_sierra(url, source):
+    """
+    Páginas agrupadoras de Sierra Norte:
+    - /rutas/rutas-de-bicicleta/rutas-de-cicloturismo/
+    - /rutas/rutas-de-senderismo/grandes-rutas/...
+    etc.
+
+    Queremos guardarlas como item agrupador, pero también abrirlas para extraer
+    las fichas individuales /ruta/... que contienen.
+    """
+    if not es_fuente_sierra_norte(source):
+        return False
+
+    parsed = urlparse(url)
+    if parsed.netloc.lower() != "www.sierranortemadrid.org":
+        return False
+
+    path = parsed.path.rstrip("/") + "/"
+
+    if "/ruta/" in path:
+        return False
+
+    return (
+        "/rutas/rutas-de-senderismo/" in path
+        or "/rutas/rutas-de-bicicleta/" in path
+    )
+
+
+def obtener_tipo_contenido_evergreen(url, source):
+    if source.get("incluir_url_indice_como_item") and es_url_indice_source(url, source):
+        return "agrupacion"
+
+    if es_url_pagina_intermedia_sierra(url, source):
+        return "agrupacion"
+
+    return "individual"
+
+
+def extraer_candidatos_desde_html(html_text, url_indice, source, vistos):
+    """
+    Extrae candidatos de una página índice/intermedia usando los mismos filtros
+    del scraper principal.
+    """
+    selector_links = source.get("selector_links", "a[href]")
+    candidatos = []
+
+    soup = BeautifulSoup(html_text, "html.parser")
+
+    for a in soup.select(selector_links):
+        href = a.get("href")
+        titulo = a.get_text(" ", strip=True)
+
+        if not href or not titulo:
+            continue
+
+        url_completa = limpiar_url(href, url_indice)
+
+        if url_completa in vistos:
+            continue
+
+        if not es_url_valida_source(url_completa, source):
+            continue
+
+        if not es_titulo_valido(titulo):
+            continue
+
+        if not anchor_cumple_filtro_listado_estricto(a, source):
+            continue
+
+        vistos.add(url_completa)
+        candidatos.append((titulo, url_completa))
+
+    return candidatos
+
+
+def agregar_indice_como_candidato(candidatos, source, vistos):
+    """
+    Algunas fuentes evergreen son también una pieza válida por sí mismas.
+
+    Ejemplo:
+    https://www.turismoextremadura.com/es/explora/extremadura-imprescindible/
+
+    En esos casos queremos:
+    1) guardar esa URL como item de tipo agrupación;
+    2) además extraer sus fichas individuales.
+    """
+    if not source.get("incluir_url_indice_como_item"):
+        return candidatos
+
+    url_indice = limpiar_url(source.get("url", ""), source.get("url", ""))
+    if not url_indice or url_indice in vistos:
+        return candidatos
+
+    titulo = (
+        source.get("titulo_indice")
+        or source.get("titulo_agrupacion")
+        or source.get("nombre")
+        or source.get("categoria", "Contenido destacado")
+    )
+
+    vistos.add(url_indice)
+    return [(titulo, url_indice)] + list(candidatos)
+
+
+def expandir_candidatos_intermedios(candidatos, source, vistos):
+    """
+    Para Sierra Norte, una página como:
+    https://www.sierranortemadrid.org/rutas/rutas-de-bicicleta/rutas-de-cicloturismo/
+
+    debe entrar como item agrupador, pero también hay que abrirla para sacar
+    fichas individuales como:
+    https://www.sierranortemadrid.org/ruta/camino-natural-del-valle-del-lozoya-cicloturismo/
+    """
+    if not source.get("expandir_paginas_intermedias"):
+        return candidatos
+
+    max_enlaces = int(source.get("max_enlaces", 120) or 120)
+    timeout_indice = source.get("timeout", 12)
+
+    resultado = list(candidatos)
+    procesadas = set()
+
+    # Recorremos con índice para permitir que nuevas páginas intermedias añadidas
+    # también se puedan expandir, pero sin bucle infinito.
+    i = 0
+    while i < len(resultado) and len(resultado) < max_enlaces:
+        titulo, url_item = resultado[i]
+        i += 1
+
+        if url_item in procesadas:
+            continue
+
+        if not es_url_pagina_intermedia_sierra(url_item, source):
+            continue
+
+        procesadas.add(url_item)
+
+        try:
+            response = requests.get(url_item, headers=HEADERS, timeout=timeout_indice)
+
+            if response.status_code == 429:
+                espera = source.get("sleep_429_indice_segundos", 15)
+                print(f"⏳ 429 en página intermedia, esperando {espera}s y saltando: {url_item}")
+                time.sleep(espera)
+                continue
+
+            response.raise_for_status()
+
+            nuevos = extraer_candidatos_desde_html(response.text, url_item, source, vistos)
+
+            for nuevo in nuevos:
+                resultado.append(nuevo)
+                if len(resultado) >= max_enlaces:
+                    break
+
+        except Exception as e:
+            print(f"⚠️ No se pudo expandir página intermedia: {url_item} ({e})")
+            continue
+
+    return resultado[:max_enlaces]
+
+
+
+# -------------------------
+# ENRIQUECIMIENTO PARA BÚSQUEDAS GPT ACTIONS
+# -------------------------
+
+def texto_busqueda_item(item):
+    return " ".join([
+        str(item.get("titulo", "")),
+        str(item.get("descripcion", "")),
+        str(item.get("url", "")),
+        str(item.get("fuente", "")),
+        str(item.get("categoria", "")),
+        str(item.get("intencion", "")),
+        str(item.get("pagina_padre", "")),
+        str(item.get("tipo_contenido", "")),
+    ]).lower()
+
+
+def inferir_tipo_plan(item):
+    categoria = item.get("categoria", "")
+    texto = texto_busqueda_item(item)
+
+    if categoria in [
+        "rutas_madrid",
+        "rutas_historicas_clm",
+        "rutas_naturaleza_sierra_norte",
+        "rutas_naturaleza_madrid",
+        "rutas_senderismo_madrid",
+        "rutas_patrimonio_madrid",
+    ]:
+        return "ruta"
+
+    if categoria == "trenes_turisticos":
+        return "tren_turistico"
+
+    if categoria == "castillos_clm":
+        return "castillo"
+
+    # Arqueología, ruinas y yacimientos se tratan como el mismo tipo.
+    if categoria == "arqueologia_clm":
+        return "yacimiento"
+
+    if categoria == "edificios_historicos":
+        return "monumento"
+
+    if categoria == "parques_jardines":
+        return "parque_jardin"
+
+    if categoria == "miradores":
+        return "mirador"
+
+    if categoria == "barrios":
+        return "barrio"
+
+    if categoria in ["excursiones", "imprescindibles_extremadura"]:
+        return "sitio_interes"
+
+    if "castillo" in texto or "fortaleza" in texto:
+        return "castillo"
+
+    if any(x in texto for x in [
+        "yacimiento",
+        "yacimientos",
+        "arqueologia",
+        "arqueología",
+        "arqueolog",
+        "ruina",
+        "ruinas",
+    ]):
+        return "yacimiento"
+
+    if any(x in texto for x in ["senderismo", "ruta", "rutas", "senda", "camino"]):
+        return "ruta"
+
+    return "plan"
+
+
+def inferir_subtipo_plan(item):
+    texto = texto_busqueda_item(item)
+
+    if any(x in texto for x in ["bicicleta", "bici", "mtb", "cicloturismo", "gravel"]):
+        return "bicicleta"
+
+    if any(x in texto for x in ["senderismo", "senda", "camino", "gr-", "gr ", "circular"]):
+        return "senderismo"
+
+    if any(x in texto for x in ["unesco", "patrimonio mundial"]):
+        return "patrimonio"
+
+    if any(x in texto for x in ["castillo", "fortaleza"]):
+        return "castillo"
+
+    if any(x in texto for x in [
+        "yacimiento",
+        "yacimientos",
+        "arqueologia",
+        "arqueología",
+        "arqueolog",
+        "ruina",
+        "ruinas",
+    ]):
+        return "arqueologia"
+
+    if any(x in texto for x in ["mirador", "vistas", "panoramica", "panorámica"]):
+        return "mirador"
+
+    if any(x in texto for x in ["parque", "jardin", "jardín"]):
+        return "parque_jardin"
+
+    return ""
+
+
+def inferir_comunidad(item):
+    texto = texto_busqueda_item(item)
+    fuente = item.get("fuente", "")
+    categoria = item.get("categoria", "")
+
+    if fuente in [
+        "esmadrid",
+        "sierra_norte_madrid",
+        "visit_madrid",
+        "madrid_film_office",
+        "patrimonio_paisaje_madrid",
+        "turismo_alcala",
+    ]:
+        return "madrid"
+
+    if fuente == "turismo_castilla_la_mancha" or categoria.endswith("_clm"):
+        return "castilla_la_mancha"
+
+    if fuente == "turismo_extremadura" or "extremadura" in texto:
+        return "extremadura"
+
+    return ""
+
+
+def inferir_provincia(item):
+    texto = texto_busqueda_item(item)
+    comunidad = inferir_comunidad(item)
+
+    if comunidad == "madrid":
+        return "madrid"
+
+    if "toledo" in texto:
+        return "toledo"
+
+    if "guadalajara" in texto:
+        return "guadalajara"
+
+    if "cuenca" in texto:
+        return "cuenca"
+
+    if "ciudad real" in texto or "ciudad-real" in texto:
+        return "ciudad_real"
+
+    if "albacete" in texto:
+        return "albacete"
+
+    if "caceres" in texto or "cáceres" in texto:
+        return "caceres"
+
+    if "badajoz" in texto:
+        return "badajoz"
+
+    return ""
+
+
+def inferir_zona(item):
+    texto = texto_busqueda_item(item)
+
+    if any(x in texto for x in [
+        "sierra norte",
+        "sierranortemadrid",
+        "lozoya",
+        "jarama",
+        "buitrago",
+        "rascafria",
+        "rascafría",
+        "patones",
+        "torrelaguna",
+    ]):
+        return "sierra_norte"
+
+    if "guadarrama" in texto:
+        return "sierra_guadarrama"
+
+    if "sierra oeste" in texto or "sierra-oeste" in texto:
+        return "sierra_oeste"
+
+    if "vegas" in texto or "alcarria" in texto:
+        return "vegas_alcarria"
+
+    if "villas de madrid" in texto:
+        return "villas_madrid"
+
+    if "madrid capital" in texto or "esmadrid.com" in texto:
+        return "madrid_capital"
+
+    return ""
+
+
+def generar_tags_evergreen(item):
+    texto = texto_busqueda_item(item)
+    tags = set()
+
+    reglas = {
+        "ruta": ["ruta", "rutas", "senda", "senderismo", "camino"],
+        "senderismo": ["senderismo", "senda", "camino", "gr-", "gr "],
+        "bicicleta": ["bicicleta", "bici", "mtb", "cicloturismo", "gravel"],
+        "naturaleza": ["naturaleza", "sierra", "parque", "jardin", "jardín", "mirador"],
+        "patrimonio": ["patrimonio", "historico", "histórico", "monumental", "unesco"],
+        "castillo": ["castillo", "fortaleza"],
+        "yacimiento": [
+            "yacimiento",
+            "yacimientos",
+            "arqueologia",
+            "arqueología",
+            "arqueolog",
+            "ruina",
+            "ruinas",
+        ],
+        "familias": ["familia", "niños", "ninos"],
+        "agua": ["agua", "rio", "río", "embalse", "presa", "lozoya", "jarama"],
+        "sierra-norte": ["sierra norte", "sierranortemadrid", "lozoya", "jarama", "buitrago"],
+        "sierra-guadarrama": ["guadarrama"],
+        "sierra-oeste": ["sierra oeste", "sierra-oeste"],
+        "vegas-alcarria": ["vegas", "alcarria"],
+        "villas-madrid": ["villas de madrid"],
+        "madrid": ["madrid"],
+        "castilla-la-mancha": ["castilla la mancha", "castillalamancha"],
+        "extremadura": ["extremadura", "turismoextremadura"],
+        "sitio-interes": ["imprescindible", "imprescindibles", "que visitar", "qué visitar"],
+        "toledo": ["toledo"],
+        "guadalajara": ["guadalajara"],
+        "cuenca": ["cuenca"],
+        "ciudad-real": ["ciudad real", "ciudad-real"],
+        "albacete": ["albacete"],
+        "caceres": ["caceres", "cáceres"],
+        "badajoz": ["badajoz"],
+    }
+
+    for tag, palabras in reglas.items():
+        if any(p in texto for p in palabras):
+            tags.add(tag)
+
+    tipo_plan = item.get("tipo_plan")
+    subtipo_plan = item.get("subtipo_plan")
+    zona = item.get("zona")
+    comunidad = item.get("comunidad")
+    provincia = item.get("provincia")
+
+    for valor in [tipo_plan, subtipo_plan, zona, comunidad, provincia]:
+        if valor:
+            tags.add(str(valor).replace("_", "-"))
+
+    return sorted(tags)
+
+
+def enriquecer_item_busqueda(item):
+    item["tipo_plan"] = inferir_tipo_plan(item)
+    item["subtipo_plan"] = inferir_subtipo_plan(item)
+    item["comunidad"] = inferir_comunidad(item)
+    item["provincia"] = inferir_provincia(item)
+    item["zona"] = inferir_zona(item)
+    item["tags"] = generar_tags_evergreen(item)
+    return item
+
+
 def scrape_categoria(source):
     url = source["url"]
     categoria = source["categoria"]
@@ -925,34 +1426,8 @@ def scrape_categoria(source):
             if sleep_indice:
                 time.sleep(sleep_indice)
 
-            soup = BeautifulSoup(response.text, "html.parser")
-
-            for a in soup.select(selector_links):
-                href = a.get("href")
-                titulo = a.get_text(" ", strip=True)
-
-                if not href or not titulo:
-                    continue
-
-                url_completa = limpiar_url(href, url_indice)
-
-                if url_completa in vistos:
-                    continue
-
-                if not es_url_valida_source(url_completa, source):
-                    continue
-
-                if not es_titulo_valido(titulo):
-                    continue
-
-                if not anchor_cumple_filtro_listado_estricto(a, source):
-                    continue
-
-                vistos.add(url_completa)
-                candidatos.append((titulo, url_completa))
-
-                if len(candidatos) >= max_enlaces:
-                    break
+            nuevos = extraer_candidatos_desde_html(response.text, url_indice, source, vistos)
+            candidatos.extend(nuevos[:max(0, max_enlaces - len(candidatos))])
 
             if len(candidatos) >= max_enlaces:
                 break
@@ -969,6 +1444,8 @@ def scrape_categoria(source):
             vistos.add(url_semilla)
             candidatos.append((titulo_semilla, url_semilla))
 
+        candidatos = agregar_indice_como_candidato(candidatos, source, vistos)
+        candidatos = expandir_candidatos_intermedios(candidatos, source, vistos)
         candidatos = candidatos[:max_enlaces]
 
         items = []
@@ -1017,11 +1494,12 @@ def scrape_categoria(source):
                 "fuente": fuente,
                 "categoria": categoria,
                 "intencion": source.get("intencion") or mapear_intencion(categoria),
-                "tipo_contenido": "individual",
+                "tipo_contenido": obtener_tipo_contenido_evergreen(url_item, source),
                 "pagina_padre": url,
                 "descripcion": descripcion
             }
 
+            item = enriquecer_item_busqueda(item)
             item["score_editorial"] = score_editorial(item)
 
             if item["score_editorial"] < score_minimo:
@@ -1100,11 +1578,21 @@ def agrupar_y_rankear(items):
 
     orden_categorias = {
         "viaje": ["excursiones", "trenes_turisticos", "imprescindibles_extremadura"],
-        "rutas": ["rutas_madrid", "rutas_historicas_clm"],
+        "rutas": [
+            "rutas_patrimonio_madrid",
+            "rutas_madrid",
+            "rutas_historicas_clm"
+        ],
         "castillos": ["castillos_clm"],
         "yacimientos": ["arqueologia_clm"],
         "monumentos": ["edificios_historicos"],
-        "naturaleza": ["parques_jardines", "miradores"],
+        "naturaleza": [
+            "rutas_senderismo_madrid",
+            "rutas_naturaleza_madrid",
+            "rutas_naturaleza_sierra_norte",
+            "parques_jardines",
+            "miradores"
+        ],
         "ocio": ["planes_madrid"],
         "barrios": ["barrios"],
         "cultura": ["tradicion_cultura"],

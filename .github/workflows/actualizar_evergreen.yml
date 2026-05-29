@@ -15,7 +15,7 @@ concurrency:
 jobs:
   actualizar-evergreen:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     steps:
       - name: Descargar repositorio
@@ -34,7 +34,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Ejecutar scraper evergreen
-        run: python evergreen_scraper.py
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          timeout 110m python evergreen_scraper.py
 
       - name: Verificar JSON generado
         run: |
